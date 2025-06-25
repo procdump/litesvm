@@ -253,12 +253,19 @@ much easier.
 
 */
 
+use std::str::FromStr;
+
+use crate::pt::{NativeProgram, Pt};
 #[cfg(feature = "nodejs-internal")]
 use qualifier_attr::qualifiers;
+use solana_program_test::{processor, ProgramTest};
+use solana_pubkey::pubkey;
 #[allow(deprecated)]
 use solana_sysvar::recent_blockhashes::IterItem;
 #[allow(deprecated)]
 use solana_sysvar::{fees::Fees, recent_blockhashes::RecentBlockhashes};
+use solts_rs::loader::Loader;
+
 use {
     crate::{
         accounts_db::AccountsDb,
@@ -337,6 +344,7 @@ mod format_logs;
 mod history;
 mod message_processor;
 mod precompiles;
+mod pt;
 mod spl;
 mod utils;
 
@@ -352,6 +360,7 @@ pub struct LiteSVM {
     blockhash_check: bool,
     fee_structure: FeeStructure,
     log_bytes_limit: Option<usize>,
+    pt: Option<Pt>,
 }
 
 impl Default for LiteSVM {
@@ -367,6 +376,7 @@ impl Default for LiteSVM {
             blockhash_check: false,
             fee_structure: FeeStructure::default(),
             log_bytes_limit: Some(10_000),
+            pt: None,
         }
     }
 }
@@ -913,8 +923,56 @@ impl LiteSVM {
             .collect::<Result<Vec<Vec<u16>>, TransactionError>>();
         match maybe_program_indices {
             Ok(program_indices) => {
-                let mut context = self.create_transaction_context(compute_budget, accounts);
-                let mut tx_result = process_message(
+                let mut context = self.create_transaction_context(compute_budget, accounts.clone());
+
+                // TEST -----
+                // let mut program_test_context = Box::leak(Box::new(
+                //     self.create_transaction_context(compute_budget, accounts),
+                // ));
+                // let mut program_test_program_cache_for_tx_batch =
+                //     Box::leak(Box::new(program_cache_for_tx_batch.clone()));
+                // let mut program_test_invoke_context = Box::leak(Box::new(InvokeContext::new(
+                //     &mut program_test_context,
+                //     &mut program_test_program_cache_for_tx_batch,
+                //     EnvironmentConfig::new(
+                //         *blockhash,
+                //         self.fee_structure.lamports_per_signature,
+                //         0,
+                //         &|_| 0,
+                //         Arc::new(self.feature_set.clone()),
+                //         &self.accounts.sysvar_cache,
+                //     ),
+                //     Some(LogCollector::new_ref()),
+                //     compute_budget,
+                // )));
+                // println!(
+                //     "SETTING INVOKE CONTEXT!: {:#?}",
+                //     program_test_invoke_context.transaction_context
+                // );
+                // solana_program_test::set_invoke_context(&mut program_test_invoke_context); // TODO: Make this fn public and uncomment
+
+                let my_tx = tx.clone().to_versioned_transaction();
+                let mut program_test_context =
+                    self.create_transaction_context(compute_budget, accounts);
+                let mut program_test_program_cache_for_tx_batch =
+                    program_cache_for_tx_batch.clone();
+                let mut program_test_invoke_context = InvokeContext::new(
+                    &mut program_test_context,
+                    &mut program_test_program_cache_for_tx_batch,
+                    EnvironmentConfig::new(
+                        *blockhash,
+                        self.fee_structure.lamports_per_signature,
+                        0,
+                        &|_| 0,
+                        Arc::new(self.feature_set.clone()),
+                        &self.accounts.sysvar_cache,
+                    ),
+                    Some(LogCollector::new_ref()),
+                    compute_budget,
+                );
+                // TEST -----
+
+                let mut tx_result: Result<(), TransactionError> = process_message(
                     tx.message(),
                     &program_indices,
                     &mut InvokeContext::new(
@@ -935,6 +993,15 @@ impl LiteSVM {
                     &mut accumulated_consume_units,
                 )
                 .map(|_| ());
+
+                println!("ORIGINAL TX DONE");
+                if let Some(pt) = &self.pt {
+                    pt.send_transaction(
+                        &mut program_test_invoke_context,
+                        my_tx,
+                        self.accounts.clone(),
+                    );
+                }
 
                 if let Err(err) = self.check_accounts_rent(tx, &context) {
                     tx_result = Err(err);
@@ -1137,14 +1204,107 @@ impl LiteSVM {
         })
     }
 
+    #[allow(dead_code)]
+    fn my_execute_tx(tx: VersionedTransaction, accounts: AccountsDb) {
+        println!("-----------------------------------------------------------------------------------------------------");
+        println!("-----------------------------------------------------------------------------------------------------");
+        println!("-----------------------------------------------------------------------------------------------------");
+        println!("-----------------------------------------------------------------------------------------------------");
+        println!("-----------------------------------------------------------------------------------------------------");
+        let mut pt_native = ProgramTest::default();
+        pt_native.prefer_bpf(false);
+
+        let so_path = "/Users/boris/projects/litesvm/crates/litesvm/test_programs/target/debug/libcounter.dylib";
+        let programs = [(
+            Pubkey::from_str("GtdambwDgHWrDJdVPBkEHGhCwokqgAoch162teUjJse2").unwrap(),
+            "counter",
+        )];
+        let mut loader = Loader::new();
+        for (program_id, program_name) in &programs {
+            println!(
+                "Adding native program {} with id: {}",
+                program_name, program_id
+            );
+            loader.add(so_path, &program_name, &program_id).unwrap();
+            pt_native.add_program(
+                &program_name,
+                *program_id,
+                processor!(solts_rs::loader::entry_wrapper),
+            );
+        }
+        println!("Loaded: {:?}", loader);
+        // let rt = tokio::runtime::Builder::new_current_thread()
+        //     .enable_time()
+        //     .build()
+        //     .unwrap();
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            let mut pt_context = pt_native.start_with_context().await;
+            // let counter_address = pubkey!("J39wvrFY2AkoAUCke5347RMNk3ditxZfVidoZ7U6Fguf");
+            // let program_id = pubkey!("GtdambwDgHWrDJdVPBkEHGhCwokqgAoch162teUjJse2");
+            // let _ = pt_context
+            //     .set_account(&counter_address, &AccountSharedData::new(5, 4, &program_id));
+            loader.adjust_stubs().unwrap();
+            for (account_address, account) in &accounts.inner {
+                // println!("Account: {:#?} data: {:#?}", account_address, account);
+                let to_add = programs
+                    .iter()
+                    .find(|(id, _)| id == account.owner())
+                    .is_some();
+                if to_add == true {
+                    pt_context.set_account(account_address, account);
+                }
+            }
+            let recent_blockhash = pt_context
+                .banks_client
+                .get_latest_blockhash()
+                .await
+                .unwrap();
+            println!("PREPARING TRANS: {:#?}", tx);
+            let mut trans = tx.clone().into_legacy_transaction().unwrap();
+            let payer = pt_context.payer;
+            println!("Payer: {}", payer.pubkey());
+            trans.message.recent_blockhash = recent_blockhash;
+            trans.message.account_keys[0] = payer.pubkey().clone();
+            trans.sign(&[&payer], recent_blockhash);
+            let versioned_tx = VersionedTransaction::from(trans);
+            println!("TRANS AFTER SIGN: {:#?}", versioned_tx);
+
+            let res = pt_context
+                .banks_client
+                .process_transaction(versioned_tx)
+                .await;
+            println!("OUR TX RES: {:?}", res);
+            let acc = pt_context
+                .banks_client
+                .get_account(pubkey!("J39wvrFY2AkoAUCke5347RMNk3ditxZfVidoZ7U6Fguf"))
+                .await
+                .unwrap();
+            if acc.is_some() {
+                println!("ACCOUNT IS HERE!");
+            }
+            println!("#################################### END");
+            println!("#################################### END");
+            println!("#################################### END");
+            println!("#################################### END");
+        });
+    }
+
+    pub fn add_native_program(&mut self, programs: Vec<NativeProgram>) {
+        self.pt = Some(Pt::new(programs));
+    }
+
     /// Submits a signed transaction.
     pub fn send_transaction(&mut self, tx: impl Into<VersionedTransaction>) -> TransactionResult {
+        println!("Send transaction!");
         let log_collector = LogCollector {
             bytes_limit: self.log_bytes_limit,
             ..Default::default()
         };
         let log_collector = Rc::new(RefCell::new(log_collector));
         let vtx: VersionedTransaction = tx.into();
+        // let my_tx = vtx.clone();
+        // let my_accounts = self.accounts.clone();
         let ExecutionResult {
             post_accounts,
             tx_result,
@@ -1182,7 +1342,15 @@ impl LiteSVM {
                 .sync_accounts(post_accounts)
                 .expect("It shouldn't be possible to write invalid sysvars in send_transaction.");
 
-            TransactionResult::Ok(meta)
+            let res = TransactionResult::Ok(meta);
+
+            // OUR LOGIC HERE
+            // Self::my_execute_tx(my_tx, my_accounts);
+            // if let Some(pt) = &self.pt {
+            //     pt.send_transaction(my_tx, my_accounts);
+            // }
+
+            res
         }
     }
 

@@ -2362,9 +2362,9 @@ checksum = "c19937216e9d3aa9956d9bb8dfc0b0c8beb6058fc4f7a4dc4d850edf86a237d6"
 
 [[package]]
 name = "libloading"
-version = "0.8.6"
+version = "0.8.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc2f4eb4bc735547cfed7c0a4922cbd04a4655978c09b54f1f7b228750664c34"
+checksum = "07033963ba89ebaf1584d767badaa2e8fcec21aedea6b8c0346d487d49c28667"
 dependencies = [
  "cfg-if",
  "windows-targets 0.52.6",
@@ -2500,7 +2500,7 @@ dependencies = [
  "solana-program-option",
  "solana-program-pack",
  "solana-program-runtime",
- "solana-program-test",
+ "solana-program-test 2.2.4",
  "solana-pubkey",
  "solana-rent",
  "solana-reserved-account-keys",
@@ -2522,6 +2522,7 @@ dependencies = [
  "solana-transaction-context",
  "solana-transaction-error",
  "solana-vote-program",
+ "solts-rs",
  "spl-associated-token-account-client",
  "spl-token",
  "test-log",
@@ -5660,6 +5661,43 @@ dependencies = [
 [[package]]
 name = "solana-program-test"
 version = "2.2.4"
+dependencies = [
+ "assert_matches",
+ "async-trait",
+ "base64 0.22.1",
+ "bincode",
+ "chrono-humanize",
+ "crossbeam-channel",
+ "log",
+ "serde",
+ "solana-accounts-db",
+ "solana-banks-client",
+ "solana-banks-interface",
+ "solana-banks-server",
+ "solana-bpf-loader-program",
+ "solana-compute-budget",
+ "solana-feature-set",
+ "solana-inline-spl",
+ "solana-instruction",
+ "solana-log-collector",
+ "solana-logger",
+ "solana-program-runtime",
+ "solana-runtime",
+ "solana-sbpf",
+ "solana-sdk",
+ "solana-sdk-ids",
+ "solana-stake-program",
+ "solana-svm",
+ "solana-timings",
+ "solana-vote-program",
+ "test-case",
+ "thiserror 2.0.12",
+ "tokio",
+]
+
+[[package]]
+name = "solana-program-test"
+version = "2.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b15cedbd823f64af662551bb801687ea98067bbddf06e0394876a40485542667"
 dependencies = [
@@ -7086,6 +7124,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "solts-rs"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "bincode",
+ "borsh 1.5.7",
+ "bs58",
+ "jsonrpc-core",
+ "lazy_static",
+ "libloading",
+ "serde",
+ "solana-program-test 2.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "solana-sdk",
+ "tokio",
+]
+
+[[package]]
 name = "spinning_top"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7605,6 +7660,39 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f50febec83f5ee1df3015341d8bd429f2d1cc62bcba7ea2076759d315084683"
 
 [[package]]
+name = "test-case"
+version = "3.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eb2550dd13afcd286853192af8601920d959b14c401fcece38071d53bf0768a8"
+dependencies = [
+ "test-case-macros",
+]
+
+[[package]]
+name = "test-case-core"
+version = "3.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "adcb7fd841cd518e279be3d5a3eb0636409487998a4aff22f3de87b81e88384f"
+dependencies = [
+ "cfg-if",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.100",
+]
+
+[[package]]
+name = "test-case-macros"
+version = "3.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c89e72a01ed4c579669add59014b9a524d609c0c88c6a585ce37485879f6ffb"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.100",
+ "test-case-core",
+]
+
+[[package]]
 name = "test-log"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7744,9 +7832,9 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tokio"
-version = "1.44.1"
+version = "1.45.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f382da615b842244d4b8738c82ed1275e6c5dd90c459a30941cd07080b06c91a"
+checksum = "75ef51a33ef1da925cea3e4eb122833cb377c61439ca401b770f54902b806779"
 dependencies = [
  "backtrace",
  "bytes",

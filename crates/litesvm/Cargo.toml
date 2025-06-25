@@ -70,6 +70,9 @@ solana-transaction-context.workspace = true
 solana-transaction-error.workspace = true
 solana-vote-program.workspace = true
 thiserror.workspace = true
+solts-rs = { path = "/Users/boris/projects/solana/solts-rs" }
+solana-program-test.workspace = true
+tokio.workspace = true
 
 [dev-dependencies]
 criterion.workspace = true

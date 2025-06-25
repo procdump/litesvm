@@ -18,3 +18,8 @@ solana-msg.workspace = true
 solana-program-entrypoint.workspace = true
 solana-program-error = { workspace = true, features = ["borsh"] }
 solana-pubkey.workspace = true
+solana-program.workspace = true
+#solana-program-test.workspace = true
+
+solana-clock = { workspace = true }
+solana-sysvar = { workspace = true }
