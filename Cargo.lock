@@ -4179,6 +4179,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "sol-stubs"
+version = "0.1.0"
+dependencies = [
+ "lazy_static",
+]
+
+[[package]]
 name = "solana-account"
 version = "2.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7135,6 +7142,7 @@ dependencies = [
  "lazy_static",
  "libloading",
  "serde",
+ "sol-stubs",
  "solana-program-test 2.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "solana-sdk",
  "tokio",
