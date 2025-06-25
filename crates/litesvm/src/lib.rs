@@ -925,32 +925,7 @@ impl LiteSVM {
             Ok(program_indices) => {
                 let mut context = self.create_transaction_context(compute_budget, accounts.clone());
 
-                // TEST -----
-                // let mut program_test_context = Box::leak(Box::new(
-                //     self.create_transaction_context(compute_budget, accounts),
-                // ));
-                // let mut program_test_program_cache_for_tx_batch =
-                //     Box::leak(Box::new(program_cache_for_tx_batch.clone()));
-                // let mut program_test_invoke_context = Box::leak(Box::new(InvokeContext::new(
-                //     &mut program_test_context,
-                //     &mut program_test_program_cache_for_tx_batch,
-                //     EnvironmentConfig::new(
-                //         *blockhash,
-                //         self.fee_structure.lamports_per_signature,
-                //         0,
-                //         &|_| 0,
-                //         Arc::new(self.feature_set.clone()),
-                //         &self.accounts.sysvar_cache,
-                //     ),
-                //     Some(LogCollector::new_ref()),
-                //     compute_budget,
-                // )));
-                // println!(
-                //     "SETTING INVOKE CONTEXT!: {:#?}",
-                //     program_test_invoke_context.transaction_context
-                // );
-                // solana_program_test::set_invoke_context(&mut program_test_invoke_context); // TODO: Make this fn public and uncomment
-
+                // TODO: Refactor
                 let my_tx = tx.clone().to_versioned_transaction();
                 let mut program_test_context =
                     self.create_transaction_context(compute_budget, accounts);
@@ -970,7 +945,7 @@ impl LiteSVM {
                     Some(LogCollector::new_ref()),
                     compute_budget,
                 );
-                // TEST -----
+                // TODO: Refactor
 
                 let mut tx_result: Result<(), TransactionError> = process_message(
                     tx.message(),
@@ -1307,8 +1282,6 @@ impl LiteSVM {
         };
         let log_collector = Rc::new(RefCell::new(log_collector));
         let vtx: VersionedTransaction = tx.into();
-        // let my_tx = vtx.clone();
-        // let my_accounts = self.accounts.clone();
         let ExecutionResult {
             post_accounts,
             tx_result,
@@ -1346,15 +1319,7 @@ impl LiteSVM {
                 .sync_accounts(post_accounts)
                 .expect("It shouldn't be possible to write invalid sysvars in send_transaction.");
 
-            let res = TransactionResult::Ok(meta);
-
-            // OUR LOGIC HERE
-            // Self::my_execute_tx(my_tx, my_accounts);
-            // if let Some(pt) = &self.pt {
-            //     pt.send_transaction(my_tx, my_accounts);
-            // }
-
-            res
+            TransactionResult::Ok(meta)
         }
     }
 
