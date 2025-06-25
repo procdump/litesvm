@@ -73,7 +73,7 @@ thiserror.workspace = true
 # solts-rs = { path = "/Users/boris/projects/solana/solts-rs" }
 libloading = "0.8.8"
 lazy_static = "1.5.0"
-sol-stubs = { path = "/Users/boris/projects/solana/sol-stubs" }
+sol-stubs.workspace = true
 solana-program-test.workspace = true
 tokio.workspace = true
 

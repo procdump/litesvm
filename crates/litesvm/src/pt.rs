@@ -57,11 +57,11 @@ impl Pt {
 
     pub fn send_transaction(
         &self,
-        mut invoke_context: &mut InvokeContext,
+        mut _invoke_context: &mut InvokeContext,
         tx: VersionedTransaction,
         accounts_db: AccountsDb,
     ) -> PtError<()> {
-        set_invoke_context(&mut invoke_context);
+        // set_invoke_context(&mut invoke_context);
         let _: PtError<()> = self.rt.block_on(async {
             for (account_address, account) in &accounts_db.inner {
                 // println!("Account: {:#?} data: {:#?}", account_address, account);

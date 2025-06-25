@@ -90,6 +90,7 @@ spl-token-2022 = "7.0.0"
 test-log = "0.2"
 thiserror = "2.0"
 tokio = "1.35"
+sol-stubs = { path = "/Users/boris/projects/solana/sol-stubs" }
 
 [profile.bench]
 debug = true
