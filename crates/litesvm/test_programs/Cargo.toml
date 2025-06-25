@@ -12,7 +12,6 @@ solana-program-error = "2.2"
 solana-pubkey = "2.2"
 solana-sysvar = { version = "2.2", features = ["bincode"] }
 solana-program = "2.2"
-sol-stubs = { path = "/Users/boris/projects/solana/sol-stubs" }
 
 [profile.release]
 overflow-checks = true
