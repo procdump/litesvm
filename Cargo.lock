@@ -2463,10 +2463,13 @@ dependencies = [
  "ed25519-dalek",
  "indexmap",
  "itertools 0.14.0",
+ "lazy_static",
+ "libloading",
  "libsecp256k1",
  "log",
  "qualifier_attr",
  "serde",
+ "sol-stubs",
  "solana-account",
  "solana-address-lookup-table-interface",
  "solana-bpf-loader-program",
@@ -2500,7 +2503,7 @@ dependencies = [
  "solana-program-option",
  "solana-program-pack",
  "solana-program-runtime",
- "solana-program-test 2.2.4",
+ "solana-program-test",
  "solana-pubkey",
  "solana-rent",
  "solana-reserved-account-keys",
@@ -2522,7 +2525,6 @@ dependencies = [
  "solana-transaction-context",
  "solana-transaction-error",
  "solana-vote-program",
- "solts-rs",
  "spl-associated-token-account-client",
  "spl-token",
  "test-log",
@@ -5703,43 +5705,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "solana-program-test"
-version = "2.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b15cedbd823f64af662551bb801687ea98067bbddf06e0394876a40485542667"
-dependencies = [
- "assert_matches",
- "async-trait",
- "base64 0.22.1",
- "bincode",
- "chrono-humanize",
- "crossbeam-channel",
- "log",
- "serde",
- "solana-accounts-db",
- "solana-banks-client",
- "solana-banks-interface",
- "solana-banks-server",
- "solana-bpf-loader-program",
- "solana-compute-budget",
- "solana-feature-set",
- "solana-inline-spl",
- "solana-instruction",
- "solana-log-collector",
- "solana-logger",
- "solana-program-runtime",
- "solana-runtime",
- "solana-sbpf",
- "solana-sdk",
- "solana-sdk-ids",
- "solana-svm",
- "solana-timings",
- "solana-vote-program",
- "thiserror 2.0.12",
- "tokio",
-]
-
-[[package]]
 name = "solana-pubkey"
 version = "2.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7128,24 +7093,6 @@ dependencies = [
  "subtle",
  "thiserror 2.0.12",
  "zeroize",
-]
-
-[[package]]
-name = "solts-rs"
-version = "0.1.0"
-dependencies = [
- "base64 0.22.1",
- "bincode",
- "borsh 1.5.7",
- "bs58",
- "jsonrpc-core",
- "lazy_static",
- "libloading",
- "serde",
- "sol-stubs",
- "solana-program-test 2.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "solana-sdk",
- "tokio",
 ]
 
 [[package]]

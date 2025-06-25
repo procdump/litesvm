@@ -253,18 +253,14 @@ much easier.
 
 */
 
-use std::str::FromStr;
 
 use crate::pt::{NativeProgram, Pt};
 #[cfg(feature = "nodejs-internal")]
 use qualifier_attr::qualifiers;
-use solana_program_test::{processor, ProgramTest};
-use solana_pubkey::pubkey;
 #[allow(deprecated)]
 use solana_sysvar::recent_blockhashes::IterItem;
 #[allow(deprecated)]
 use solana_sysvar::{fees::Fees, recent_blockhashes::RecentBlockhashes};
-use solts_rs::loader::Loader;
 
 use {
     crate::{
@@ -342,10 +338,12 @@ pub mod types;
 mod accounts_db;
 mod format_logs;
 mod history;
+mod loader;
 mod message_processor;
 mod precompiles;
 mod pt;
 mod spl;
+mod stubs;
 mod utils;
 
 #[derive(Clone)]

@@ -1,10 +1,10 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use {
     solana_account_info::{next_account_info, AccountInfo},
+    solana_clock::Clock,
     solana_msg::msg,
     solana_program_error::{ProgramError, ProgramResult},
     solana_pubkey::{declare_id, Pubkey},
-    solana_clock::Clock,
     solana_sysvar::Sysvar,
 };
 
@@ -25,7 +25,11 @@ pub fn process_instruction(
     instruction_data: &[u8],
 ) -> ProgramResult {
     let (instruction_discriminant, instruction_data_inner) = instruction_data.split_at(1);
-    msg!("accounts: {:#?}, instdata: {:#?}", accounts, instruction_data);
+    msg!(
+        "accounts: {:#?}, instdata: {:#?}",
+        accounts,
+        instruction_data
+    );
     match instruction_discriminant[0] {
         0 => {
             let got_clock = Clock::get()?;

@@ -7,10 +7,12 @@ use solana_program_test::{
 use solana_pubkey::Pubkey;
 use solana_signer::Signer;
 use solana_transaction::versioned::VersionedTransaction;
-use solts_rs::loader::Loader;
 use tokio::runtime::Runtime;
 
-use crate::accounts_db::AccountsDb;
+use crate::{
+    accounts_db::AccountsDb,
+    loader::{self, Loader},
+};
 pub type PtError<T> = Result<T, Box<dyn Error + Send + Sync>>;
 pub type ProgramName = String;
 pub type Path = String;
@@ -36,11 +38,7 @@ impl Pt {
                 program_name, program_id
             );
             loader.add(&so_path, &program_name, &program_id)?;
-            pt_native.add_program(
-                program_name,
-                *program_id,
-                processor!(solts_rs::loader::entry_wrapper),
-            );
+            pt_native.add_program(program_name, *program_id, processor!(loader::entry_wrapper));
         }
         println!("Loaded: {:?}", loader);
 
