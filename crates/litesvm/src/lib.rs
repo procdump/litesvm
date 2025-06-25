@@ -996,7 +996,7 @@ impl LiteSVM {
 
                 println!("ORIGINAL TX DONE");
                 if let Some(pt) = &self.pt {
-                    pt.send_transaction(
+                    let _ = pt.send_transaction(
                         &mut program_test_invoke_context,
                         my_tx,
                         self.accounts.clone(),
@@ -1290,8 +1290,12 @@ impl LiteSVM {
         });
     }
 
-    pub fn add_native_program(&mut self, programs: Vec<NativeProgram>) {
-        self.pt = Some(Pt::new(programs));
+    pub fn add_native_program(
+        &mut self,
+        programs: Vec<NativeProgram>,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        self.pt = Some(Pt::new(programs)?);
+        Ok(())
     }
 
     /// Submits a signed transaction.

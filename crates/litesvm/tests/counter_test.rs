@@ -29,7 +29,7 @@ fn read_counter_program() -> Vec<u8> {
 #[test]
 pub fn integration_test() {
     let mut svm = LiteSVM::new();
-    svm.add_native_program(vec![(
+    let _ = svm.add_native_program(vec![(
         Pubkey::from_str("GtdambwDgHWrDJdVPBkEHGhCwokqgAoch162teUjJse2").unwrap(),
         "counter".into(),
         "/Users/boris/projects/litesvm/crates/litesvm/test_programs/target/debug/libcounter.dylib"
