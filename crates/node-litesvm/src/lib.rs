@@ -22,13 +22,14 @@ use {
             SimulatedTransactionInfo as SimulatedTransactionInfoOriginal,
             TransactionResult as TransactionResultOriginal,
         },
-        LiteSVM as LiteSVMOriginal,
+        LiteSVM as LiteSVMOriginal, NativeProgram,
     },
     napi::bindgen_prelude::*,
     solana_clock::Clock as ClockOriginal,
     solana_epoch_rewards::EpochRewards as EpochRewardsOriginal,
     solana_epoch_schedule::EpochSchedule as EpochScheduleOriginal,
     solana_last_restart_slot::LastRestartSlot,
+    solana_pubkey::Pubkey,
     solana_rent::Rent as RentOriginal,
     solana_signature::Signature,
     solana_slot_hashes::SlotHashes,
@@ -232,6 +233,29 @@ impl LiteSvm {
                     format!("Failed to add program: {e}"),
                 )
             })
+    }
+
+    #[napi]
+    pub fn with_coverage(
+        &mut self,
+        program_name: String,
+        program_id: Uint8Array,
+        path: String,
+    ) -> Result<()> {
+        let program_pubkey: Pubkey = Pubkey::new_from_array(
+            program_id
+                .to_vec()
+                .try_into()
+                .map_err(|_| Error::new(Status::InvalidArg, "Program ID must be 32 bytes"))?,
+        );
+        let program: NativeProgram = (program_pubkey, program_name, path);
+        self.0.with_coverage(vec![program]).map_err(|e| {
+            Error::new(
+                Status::GenericFailure,
+                format!("Failed to set programs for coverage: {e}"),
+            )
+        })?;
+        Ok(())
     }
 
     #[napi]

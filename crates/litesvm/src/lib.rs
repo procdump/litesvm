@@ -253,18 +253,14 @@ much easier.
 
 */
 
-use std::str::FromStr;
-
-use crate::pt::{NativeProgram, Pt};
+pub use lite_coverage::{LiteCoverage, LiteCoverageError, NativeProgram};
 #[cfg(feature = "nodejs-internal")]
 use qualifier_attr::qualifiers;
-use solana_program_test::{processor, ProgramTest};
-use solana_pubkey::pubkey;
 #[allow(deprecated)]
-use solana_sysvar::recent_blockhashes::IterItem;
-#[allow(deprecated)]
-use solana_sysvar::{fees::Fees, recent_blockhashes::RecentBlockhashes};
-use solts_rs::loader::Loader;
+use solana_sysvar::{
+    fees::Fees, recent_blockhashes::IterItem, recent_blockhashes::RecentBlockhashes,
+};
+// use sol_coverage::loader::Loader;
 
 use {
     crate::{
@@ -344,7 +340,7 @@ mod format_logs;
 mod history;
 mod message_processor;
 mod precompiles;
-mod pt;
+
 mod spl;
 mod utils;
 
@@ -360,7 +356,7 @@ pub struct LiteSVM {
     blockhash_check: bool,
     fee_structure: FeeStructure,
     log_bytes_limit: Option<usize>,
-    pt: Option<Pt>,
+    lite_coverage: Option<LiteCoverage>,
 }
 
 impl Default for LiteSVM {
@@ -376,7 +372,7 @@ impl Default for LiteSVM {
             blockhash_check: false,
             fee_structure: FeeStructure::default(),
             log_bytes_limit: Some(10_000),
-            pt: None,
+            lite_coverage: None,
         }
     }
 }
@@ -678,7 +674,30 @@ impl LiteSVM {
         Ok(())
     }
 
-    /// Adds am SBF program to the test environment.
+    // /// Adds an SBF program to the test environment from the file specified.
+    // pub fn add_coverage_program_from_file(
+    //     &mut self,
+    //     program_id: Pubkey,
+    //     program_path: impl AsRef<Path>,
+    //     lib_path: impl AsRef<Path>,
+    // ) -> Result<(), std::io::Error> {
+    //     let program_bytes = std::fs::read(program_path)?;
+    //     self
+    //     // maybe load here ?
+
+    //     match self.pt {
+    //         Some(_pt) => {
+    //             // TODO: Implement coverage program loading
+    //             Ok(())
+    //         }
+    //         None => Err(std::io::Error::new(
+    //             std::io::ErrorKind::Other,
+    //             "No program test set",
+    //         )),
+    //     }
+    // }
+
+    /// Adds an SBF program to the test environment.
     pub fn add_program(&mut self, program_id: Pubkey, program_bytes: &[u8]) {
         let program_len = program_bytes.len();
         let lamports = self.minimum_balance_for_rent_exemption(program_len);
@@ -926,26 +945,7 @@ impl LiteSVM {
                 let mut context = self.create_transaction_context(compute_budget, accounts.clone());
 
                 // TODO: Refactor
-                let my_tx = tx.clone().to_versioned_transaction();
-                let mut program_test_context =
-                    self.create_transaction_context(compute_budget, accounts);
-                let mut program_test_program_cache_for_tx_batch =
-                    program_cache_for_tx_batch.clone();
-                let mut program_test_invoke_context = InvokeContext::new(
-                    &mut program_test_context,
-                    &mut program_test_program_cache_for_tx_batch,
-                    EnvironmentConfig::new(
-                        *blockhash,
-                        self.fee_structure.lamports_per_signature,
-                        0,
-                        &|_| 0,
-                        Arc::new(self.feature_set.clone()),
-                        &self.accounts.sysvar_cache,
-                    ),
-                    Some(LogCollector::new_ref()),
-                    compute_budget,
-                );
-                // TODO: Refactor
+                let tx_copy = tx.clone().to_versioned_transaction();
 
                 let mut tx_result: Result<(), TransactionError> = process_message(
                     tx.message(),
@@ -970,12 +970,24 @@ impl LiteSVM {
                 .map(|_| ());
 
                 println!("ORIGINAL TX DONE");
-                if let Some(pt) = &self.pt {
-                    let _ = pt.send_transaction(
-                        &mut program_test_invoke_context,
-                        my_tx,
-                        self.accounts.clone(),
-                    );
+
+                if let Some(lite_coverage) = &self.lite_coverage {
+                    // Sync Sysvars
+                    self.sync_sysvars_with_lite_coverage();
+
+                    let account_keys = tx.message().static_account_keys();
+                    let mut tx_accounts: Vec<(Pubkey, AccountSharedData)> =
+                        Vec::with_capacity(account_keys.len());
+                    for account_key in account_keys {
+                        let account = self.get_account(account_key);
+                        if let Some(account) = account {
+                            if !account.executable() {
+                                tx_accounts.push((*account_key, account.into()));
+                            }
+                        }
+                    }
+
+                    let _ = lite_coverage.send_transaction(tx_copy, &tx_accounts);
                 }
 
                 if let Err(err) = self.check_accounts_rent(tx, &context) {
@@ -992,6 +1004,88 @@ impl LiteSVM {
             }
             Err(e) => (Err(e), accumulated_consume_units, None, fee, payer_key),
         }
+    }
+
+    pub fn sync_sysvars_with_lite_coverage(&self) {
+        let clock_sysvar = self.get_sysvar::<Clock>();
+        self.lite_coverage
+            .as_ref()
+            .unwrap()
+            .pt_context
+            .borrow_mut()
+            .set_sysvar(&clock_sysvar);
+
+        let epoch_schedule_sysvar = self.get_sysvar::<EpochSchedule>();
+        self.lite_coverage
+            .as_ref()
+            .unwrap()
+            .pt_context
+            .borrow_mut()
+            .set_sysvar(&epoch_schedule_sysvar);
+
+        let fees_sysvar = self.get_sysvar::<Fees>();
+        self.lite_coverage
+            .as_ref()
+            .unwrap()
+            .pt_context
+            .borrow_mut()
+            .set_sysvar(&fees_sysvar);
+
+        let rent_sysvar = self.get_sysvar::<Rent>();
+        self.lite_coverage
+            .as_ref()
+            .unwrap()
+            .pt_context
+            .borrow_mut()
+            .set_sysvar(&rent_sysvar);
+
+        let epoch_rewards_sysvar = self.get_sysvar::<EpochRewards>();
+        self.lite_coverage
+            .as_ref()
+            .unwrap()
+            .pt_context
+            .borrow_mut()
+            .set_sysvar(&epoch_rewards_sysvar);
+
+        let recent_blockhashes_sysvar = self.get_sysvar::<RecentBlockhashes>();
+        self.lite_coverage
+            .as_ref()
+            .unwrap()
+            .pt_context
+            .borrow_mut()
+            .set_sysvar(&recent_blockhashes_sysvar);
+
+        let slot_hashed_sysvar = self.get_sysvar::<SlotHashes>();
+        self.lite_coverage
+            .as_ref()
+            .unwrap()
+            .pt_context
+            .borrow_mut()
+            .set_sysvar(&slot_hashed_sysvar);
+
+        let slot_history_sysvar = self.get_sysvar::<SlotHistory>();
+        self.lite_coverage
+            .as_ref()
+            .unwrap()
+            .pt_context
+            .borrow_mut()
+            .set_sysvar(&slot_history_sysvar);
+
+        let stake_history_sysvar = self.get_sysvar::<StakeHistory>();
+        self.lite_coverage
+            .as_ref()
+            .unwrap()
+            .pt_context
+            .borrow_mut()
+            .set_sysvar(&stake_history_sysvar);
+
+        let last_restart_slot_sysvar = self.get_sysvar::<LastRestartSlot>();
+        self.lite_coverage
+            .as_ref()
+            .unwrap()
+            .pt_context
+            .borrow_mut()
+            .set_sysvar(&last_restart_slot_sysvar);
     }
 
     fn check_accounts_rent(
@@ -1179,11 +1273,8 @@ impl LiteSVM {
         })
     }
 
-    pub fn add_native_program(
-        &mut self,
-        programs: Vec<NativeProgram>,
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        self.pt = Some(Pt::new(programs)?);
+    pub fn with_coverage(&mut self, programs: Vec<NativeProgram>) -> LiteCoverageError<()> {
+        self.lite_coverage = Some(LiteCoverage::new(programs)?);
         Ok(())
     }
 

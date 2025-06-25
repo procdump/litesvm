@@ -2448,6 +2448,33 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fe7db12097d22ec582439daf8618b8fdd1a7bef6270e9af3b1ebcd30893cf413"
 
 [[package]]
+name = "lite-coverage"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "bincode",
+ "borsh 1.5.7",
+ "bs58",
+ "jsonrpc-core",
+ "lazy_static",
+ "libloading",
+ "serde",
+ "sol-stubs",
+ "solana-account",
+ "solana-instruction",
+ "solana-keypair",
+ "solana-program",
+ "solana-program-error",
+ "solana-program-test",
+ "solana-pubkey",
+ "solana-sdk-ids",
+ "solana-signer",
+ "solana-sysvar",
+ "solana-transaction",
+ "tokio",
+]
+
+[[package]]
 name = "litemap"
 version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2464,6 +2491,7 @@ dependencies = [
  "indexmap",
  "itertools 0.14.0",
  "libsecp256k1",
+ "lite-coverage",
  "log",
  "qualifier_attr",
  "serde",
@@ -2500,7 +2528,7 @@ dependencies = [
  "solana-program-option",
  "solana-program-pack",
  "solana-program-runtime",
- "solana-program-test 2.2.4",
+ "solana-program-test",
  "solana-pubkey",
  "solana-rent",
  "solana-reserved-account-keys",
@@ -2522,7 +2550,6 @@ dependencies = [
  "solana-transaction-context",
  "solana-transaction-error",
  "solana-vote-program",
- "solts-rs",
  "spl-associated-token-account-client",
  "spl-token",
  "test-log",
@@ -4179,6 +4206,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "sol-stubs"
+version = "0.1.0"
+dependencies = [
+ "lazy_static",
+]
+
+[[package]]
 name = "solana-account"
 version = "2.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5686,45 +5720,6 @@ dependencies = [
  "solana-sbpf",
  "solana-sdk",
  "solana-sdk-ids",
- "solana-stake-program",
- "solana-svm",
- "solana-timings",
- "solana-vote-program",
- "test-case",
- "thiserror 2.0.12",
- "tokio",
-]
-
-[[package]]
-name = "solana-program-test"
-version = "2.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b15cedbd823f64af662551bb801687ea98067bbddf06e0394876a40485542667"
-dependencies = [
- "assert_matches",
- "async-trait",
- "base64 0.22.1",
- "bincode",
- "chrono-humanize",
- "crossbeam-channel",
- "log",
- "serde",
- "solana-accounts-db",
- "solana-banks-client",
- "solana-banks-interface",
- "solana-banks-server",
- "solana-bpf-loader-program",
- "solana-compute-budget",
- "solana-feature-set",
- "solana-inline-spl",
- "solana-instruction",
- "solana-log-collector",
- "solana-logger",
- "solana-program-runtime",
- "solana-runtime",
- "solana-sbpf",
- "solana-sdk",
- "solana-sdk-ids",
  "solana-svm",
  "solana-timings",
  "solana-vote-program",
@@ -7124,23 +7119,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "solts-rs"
-version = "0.1.0"
-dependencies = [
- "base64 0.22.1",
- "bincode",
- "borsh 1.5.7",
- "bs58",
- "jsonrpc-core",
- "lazy_static",
- "libloading",
- "serde",
- "solana-program-test 2.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "solana-sdk",
- "tokio",
-]
-
-[[package]]
 name = "spinning_top"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7658,39 +7636,6 @@ name = "termtree"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f50febec83f5ee1df3015341d8bd429f2d1cc62bcba7ea2076759d315084683"
-
-[[package]]
-name = "test-case"
-version = "3.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb2550dd13afcd286853192af8601920d959b14c401fcece38071d53bf0768a8"
-dependencies = [
- "test-case-macros",
-]
-
-[[package]]
-name = "test-case-core"
-version = "3.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "adcb7fd841cd518e279be3d5a3eb0636409487998a4aff22f3de87b81e88384f"
-dependencies = [
- "cfg-if",
- "proc-macro2",
- "quote",
- "syn 2.0.100",
-]
-
-[[package]]
-name = "test-case-macros"
-version = "3.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c89e72a01ed4c579669add59014b9a524d609c0c88c6a585ce37485879f6ffb"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.100",
- "test-case-core",
-]
 
 [[package]]
 name = "test-log"
