@@ -10,6 +10,7 @@ use solana_pubkey::Pubkey;
 use solana_sysvar::{program_stubs::set_syscall_stubs, slot_history::AccountInfo};
 
 pub type CommonResult<T> = Result<T, Box<dyn std::error::Error + Send + Sync>>;
+#[allow(dead_code)]
 type ProgramCEntrypoint = unsafe extern "C" fn(input: *mut u8) -> u64;
 type ProgramRustEntryPoint = unsafe extern "C" fn() -> *const ();
 type ProgramSetSyscallStubsApi = unsafe extern "C" fn(stubs_api: SyscallStubsApi);
@@ -105,6 +106,7 @@ impl Loader {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn get_entrypoint(
         &self,
         program_id: &Pubkey,
