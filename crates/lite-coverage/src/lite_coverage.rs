@@ -1,6 +1,7 @@
 use crate::{
     loader::{entrypoint, Loader},
     types::{LiteCoverageError, NativeProgram},
+    AdditionalProgram,
 };
 use {
     solana_account::AccountSharedData,
@@ -20,10 +21,17 @@ pub struct LiteCoverage {
 }
 
 impl LiteCoverage {
-    pub fn new(programs: Vec<NativeProgram>) -> LiteCoverageError<Self> {
+    pub fn new(
+        programs: Vec<NativeProgram>,
+        additional_programs: Vec<AdditionalProgram>,
+    ) -> LiteCoverageError<Self> {
         let static_programs = Box::leak(Box::new(programs.clone()));
         let mut program_test = ProgramTest::default();
         program_test.prefer_bpf(false);
+        for (pubkey, name) in additional_programs.into_iter() {
+            let name = Box::leak(Box::new(name));
+            program_test.add_upgradeable_program_to_genesis(name, &pubkey);
+        }
 
         let mut loader = Loader::new();
         for (program_id, program_name, so_path) in static_programs.iter() {

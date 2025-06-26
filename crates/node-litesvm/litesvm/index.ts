@@ -299,12 +299,15 @@ export class LiteSVM {
   }
 
   /**
-   * Adds an SBF program to the test environment from the file specified.
+   * TODO add some good description
    * @param programId - The program ID.
    * @param path - The path to the .so file.
    */
-  withCoverage(programName: string, programId: Uint8Array, path: string) {
-    return this.inner.withCoverage(programName, programId, path);
+  withCoverage(
+    programs: Array<[string, Uint8Array, string]>,
+    additionalPrograms: Array<[string, Uint8Array]>
+  ) {
+    return this.inner.withCoverage(programs, additionalPrograms);
   }
 
   /**

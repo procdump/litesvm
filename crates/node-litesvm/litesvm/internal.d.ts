@@ -556,7 +556,7 @@ export declare class LiteSvm {
   airdrop(pubkey: Uint8Array, lamports: bigint): TransactionMetadata | FailedTransactionMetadata | null
   /** Adds am SBF program to the test environment from the file specified. */
   addProgramFromFile(programId: Uint8Array, path: string): void
-  withCoverage(programName: string, programId: Uint8Array, path: string): void
+  withCoverage(programs: Array<[string, Uint8Array, string]>, additionalPrograms: Array<[string, Uint8Array]>): void
   /** Adds am SBF program to the test environment. */
   addProgram(programId: Uint8Array, programBytes: Uint8Array): void
   sendLegacyTransaction(txBytes: Uint8Array): TransactionMetadata | FailedTransactionMetadata

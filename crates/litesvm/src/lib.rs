@@ -253,6 +253,7 @@ much easier.
 
 */
 
+use lite_coverage::AdditionalProgram;
 pub use lite_coverage::{LiteCoverage, LiteCoverageError, NativeProgram};
 #[cfg(feature = "nodejs-internal")]
 use qualifier_attr::qualifiers;
@@ -260,7 +261,6 @@ use qualifier_attr::qualifiers;
 use solana_sysvar::{
     fees::Fees, recent_blockhashes::IterItem, recent_blockhashes::RecentBlockhashes,
 };
-// use sol_coverage::loader::Loader;
 
 use {
     crate::{
@@ -945,7 +945,7 @@ impl LiteSVM {
                 let mut context = self.create_transaction_context(compute_budget, accounts.clone());
 
                 // TODO: Refactor
-                let tx_copy = tx.clone().to_versioned_transaction();
+                let tx_copy = tx.clone();
 
                 let mut tx_result: Result<(), TransactionError> = process_message(
                     tx.message(),
@@ -974,20 +974,11 @@ impl LiteSVM {
                 if let Some(lite_coverage) = &self.lite_coverage {
                     // Sync Sysvars
                     self.sync_sysvars_with_lite_coverage();
+                    // Sync Accounts
+                    let tx_accounts = self.sync_accounts_with_lite_coverage(&tx_copy);
 
-                    let account_keys = tx.message().static_account_keys();
-                    let mut tx_accounts: Vec<(Pubkey, AccountSharedData)> =
-                        Vec::with_capacity(account_keys.len());
-                    for account_key in account_keys {
-                        let account = self.get_account(account_key);
-                        if let Some(account) = account {
-                            if !account.executable() {
-                                tx_accounts.push((*account_key, account.into()));
-                            }
-                        }
-                    }
-
-                    let _ = lite_coverage.send_transaction(tx_copy, &tx_accounts);
+                    let _ = lite_coverage
+                        .send_transaction(tx_copy.to_versioned_transaction(), &tx_accounts);
                 }
 
                 if let Err(err) = self.check_accounts_rent(tx, &context) {
@@ -1088,6 +1079,23 @@ impl LiteSVM {
             .set_sysvar(&last_restart_slot_sysvar);
     }
 
+    pub fn sync_accounts_with_lite_coverage(
+        &self,
+        tx: &SanitizedTransaction,
+    ) -> Vec<(Pubkey, AccountSharedData)> {
+        let account_keys = tx.message().static_account_keys();
+        let mut tx_accounts: Vec<(Pubkey, AccountSharedData)> =
+            Vec::with_capacity(account_keys.len());
+        for account_key in account_keys {
+            let account = self.get_account(account_key);
+            if let Some(account) = account {
+                if !account.executable() {
+                    tx_accounts.push((*account_key, account.into()));
+                }
+            }
+        }
+        tx_accounts
+    }
     fn check_accounts_rent(
         &self,
         tx: &SanitizedTransaction,
@@ -1273,8 +1281,8 @@ impl LiteSVM {
         })
     }
 
-    pub fn with_coverage(&mut self, programs: Vec<NativeProgram>) -> LiteCoverageError<()> {
-        self.lite_coverage = Some(LiteCoverage::new(programs)?);
+    pub fn with_coverage(&mut self, programs: Vec<NativeProgram>, additional_programs: Vec<AdditionalProgram>) -> LiteCoverageError<()> {
+        self.lite_coverage = Some(LiteCoverage::new(programs, additional_programs)?);
         Ok(())
     }
 
