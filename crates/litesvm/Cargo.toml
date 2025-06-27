@@ -70,10 +70,7 @@ solana-transaction-context.workspace = true
 solana-transaction-error.workspace = true
 solana-vote-program.workspace = true
 thiserror.workspace = true
-# solts-rs = { path = "/Users/boris/projects/solana/solts-rs" }
-libloading = "0.8.8"
-lazy_static = "1.5.0"
-sol-stubs.workspace = true
+lite-coverage = { workspace = true }
 solana-program-test.workspace = true
 tokio.workspace = true
 

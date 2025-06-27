@@ -1,35 +1,37 @@
-use std::{cell::RefCell, error::Error, sync::Arc};
-
-use solana_account::ReadableAccount;
-use solana_program_test::{
-    processor, set_invoke_context, InvokeContext, ProgramTest, ProgramTestContext,
-};
-use solana_pubkey::Pubkey;
-use solana_signer::Signer;
-use solana_transaction::versioned::VersionedTransaction;
-use tokio::runtime::Runtime;
-
 use crate::{
-    accounts_db::AccountsDb,
-    loader::{self, Loader},
+    loader::{entrypoint, Loader},
+    types::{LiteCoverageError, NativeProgram},
+    AdditionalProgram,
 };
-pub type PtError<T> = Result<T, Box<dyn Error + Send + Sync>>;
-pub type ProgramName = String;
-pub type Path = String;
-pub type NativeProgram = (Pubkey, ProgramName, Path);
+use {
+    solana_account::AccountSharedData,
+    solana_program::pubkey::Pubkey,
+    solana_program_test::{processor, ProgramTest, ProgramTestContext},
+    solana_signer::Signer,
+    solana_transaction::versioned::VersionedTransaction,
+    std::{cell::RefCell, sync::Arc},
+    tokio::runtime::Runtime,
+};
 
 #[derive(Clone)]
-pub struct Pt {
+pub struct LiteCoverage {
     pub programs: Vec<NativeProgram>,
     pub pt_context: Arc<RefCell<ProgramTestContext>>,
     rt: Arc<Box<Runtime>>,
 }
 
-impl Pt {
-    pub fn new(programs: Vec<NativeProgram>) -> PtError<Self> {
+impl LiteCoverage {
+    pub fn new(
+        programs: Vec<NativeProgram>,
+        additional_programs: Vec<AdditionalProgram>,
+    ) -> LiteCoverageError<Self> {
         let static_programs = Box::leak(Box::new(programs.clone()));
-        let mut pt_native = ProgramTest::default();
-        pt_native.prefer_bpf(false);
+        let mut program_test = ProgramTest::default();
+        program_test.prefer_bpf(false);
+        for (pubkey, name) in additional_programs.into_iter() {
+            let name = Box::leak(Box::new(name));
+            program_test.add_upgradeable_program_to_genesis(name, &pubkey);
+        }
 
         let mut loader = Loader::new();
         for (program_id, program_name, so_path) in static_programs.iter() {
@@ -37,14 +39,14 @@ impl Pt {
                 "Adding native program {} with id: {}",
                 program_name, program_id
             );
-            loader.add(&so_path, &program_name, &program_id)?;
-            pt_native.add_program(program_name, *program_id, processor!(loader::entry_wrapper));
+            loader.add_program(&so_path, &program_name, &program_id)?;
+            program_test.add_program(program_name, *program_id, processor!(entrypoint));
         }
         println!("Loaded: {:?}", loader);
 
         let rt = tokio::runtime::Runtime::new()?;
         let pt_context = rt.block_on(async move {
-            let pt_context = pt_native.start_with_context().await;
+            let pt_context = program_test.start_with_context().await;
             pt_context
         });
         loader.adjust_stubs()?;
@@ -55,53 +57,50 @@ impl Pt {
         })
     }
 
+    pub fn add_account(&self, account_pubkey: &Pubkey, account_data: &AccountSharedData) {
+        self.pt_context
+            .borrow_mut()
+            .set_account(account_pubkey, account_data);
+    }
+
+    async fn re_sign_tx(
+        &self,
+        tx: &VersionedTransaction,
+    ) -> LiteCoverageError<VersionedTransaction> {
+        // TODO tx must be resigned for all signers
+        let payer = &self.pt_context.borrow().payer;
+        let recent_blockhash = self
+            .pt_context
+            .borrow()
+            .banks_client
+            .get_latest_blockhash()
+            .await?;
+
+        let mut trans = tx.clone().into_legacy_transaction().unwrap();
+        trans.message.recent_blockhash = recent_blockhash.clone();
+        trans.message.account_keys[0] = payer.pubkey().clone();
+        trans.sign(&[&payer], recent_blockhash.clone());
+        Ok(VersionedTransaction::from(trans))
+    }
+
     pub fn send_transaction(
         &self,
-        mut _invoke_context: &mut InvokeContext,
         tx: VersionedTransaction,
-        accounts_db: AccountsDb,
-    ) -> PtError<()> {
-        // set_invoke_context(&mut invoke_context);
-        let _: PtError<()> = self.rt.block_on(async {
-            for (account_address, account) in &accounts_db.inner {
-                // println!("Account: {:#?} data: {:#?}", account_address, account);
-                let to_add = self
-                    .programs
-                    .iter()
-                    .find(|(id, _, _)| id == account.owner())
-                    .is_some();
-                if to_add == true {
-                    self.pt_context
-                        .borrow_mut()
-                        .set_account(account_address, account);
-                }
+        accounts: &[(Pubkey, AccountSharedData)],
+    ) -> LiteCoverageError<()> {
+        let _: LiteCoverageError<()> = self.rt.block_on(async {
+            for (account_pubkey, account_data) in accounts {
+                self.add_account(account_pubkey, account_data);
             }
-            let recent_blockhash = self
-                .pt_context
-                .borrow()
-                .banks_client
-                .get_latest_blockhash()
-                .await?;
-
-            println!("PREPARING TRANS: {:#?}", tx);
-            let mut trans = tx
-                .clone()
-                .into_legacy_transaction()
-                .ok_or("Can't convert to legacy tx".to_string())?;
-            let payer = &self.pt_context.borrow().payer;
-            println!("TRANS PAYER: {}", payer.pubkey());
-            trans.message.recent_blockhash = recent_blockhash;
-            trans.message.account_keys[0] = payer.pubkey().clone();
-            trans.sign(&[&payer], recent_blockhash);
-            let versioned_tx = VersionedTransaction::from(trans);
-            println!("TRANS AFTER SIGN: {:#?}", versioned_tx);
+            let re_signed_tx = self.re_sign_tx(&tx).await?;
 
             let res = self
                 .pt_context
                 .borrow()
                 .banks_client
-                .process_transaction(versioned_tx)
-                .await;
+                .process_transaction_with_metadata(re_signed_tx)
+                .await?;
+
             println!("OUR TX RES: {:?}", res);
             Ok(())
         });

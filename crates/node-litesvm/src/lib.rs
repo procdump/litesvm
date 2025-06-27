@@ -22,13 +22,14 @@ use {
             SimulatedTransactionInfo as SimulatedTransactionInfoOriginal,
             TransactionResult as TransactionResultOriginal,
         },
-        LiteSVM as LiteSVMOriginal,
+        LiteSVM as LiteSVMOriginal, NativeProgram,
     },
     napi::bindgen_prelude::*,
     solana_clock::Clock as ClockOriginal,
     solana_epoch_rewards::EpochRewards as EpochRewardsOriginal,
     solana_epoch_schedule::EpochSchedule as EpochScheduleOriginal,
     solana_last_restart_slot::LastRestartSlot,
+    solana_pubkey::Pubkey,
     solana_rent::Rent as RentOriginal,
     solana_signature::Signature,
     solana_slot_hashes::SlotHashes,
@@ -232,6 +233,55 @@ impl LiteSvm {
                     format!("Failed to add program: {e}"),
                 )
             })
+    }
+
+    #[napi]
+    pub fn with_coverage(
+        &mut self,
+        programs: Vec<(String, Uint8Array, String)>,
+        additional_programs: Vec<(String, Uint8Array)>,
+    ) -> Result<()> {
+        let programs: Vec<(Pubkey, String, String)> = programs
+            .iter()
+            .map(|p| {
+                (
+                    Pubkey::new_from_array(
+                        p.1.to_vec()
+                            .try_into()
+                            .map_err(|_| {
+                                Error::new(Status::InvalidArg, "Program ID must be 32 bytes")
+                            })
+                            .unwrap(),
+                    ),
+                    p.0.clone(),
+                    p.2.clone(),
+                )
+            })
+            .collect();
+        let additional_programs: Vec<(Pubkey, String)> = additional_programs
+            .iter()
+            .map(|ap| {
+                (
+                    Pubkey::new_from_array(
+                        ap.1.to_vec()
+                            .try_into()
+                            .map_err(|_| {
+                                Error::new(Status::InvalidArg, "Program ID must be 32 bytes")
+                            })
+                            .unwrap(),
+                    ),
+                    ap.0.clone(),
+                )
+            })
+            .collect();
+
+        self.0.with_coverage(programs, additional_programs).map_err(|e| {
+            Error::new(
+                Status::GenericFailure,
+                format!("Failed to set programs for coverage: {e}"),
+            )
+        })?;
+        Ok(())
     }
 
     #[napi]
