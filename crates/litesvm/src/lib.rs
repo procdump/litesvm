@@ -944,8 +944,13 @@ impl LiteSVM {
             Ok(program_indices) => {
                 let mut context = self.create_transaction_context(compute_budget, accounts.clone());
 
-                // TODO: Refactor
-                let tx_copy = tx.clone();
+                let tx_lite_coverage = || {
+                    if self.lite_coverage.is_some() {
+                        Some(tx.clone())
+                    } else {
+                        None
+                    }
+                };
 
                 let mut tx_result: Result<(), TransactionError> = process_message(
                     tx.message(),
@@ -971,15 +976,9 @@ impl LiteSVM {
 
                 println!("ORIGINAL TX DONE");
 
-                if let Some(lite_coverage) = &self.lite_coverage {
-                    // Sync Sysvars
-                    self.sync_sysvars_with_lite_coverage();
-                    // Sync Accounts
-                    let tx_accounts = self.sync_accounts_with_lite_coverage(&tx_copy);
-
-                    let _ = lite_coverage
-                        .send_transaction(tx_copy.to_versioned_transaction(), &tx_accounts);
-                }
+                tx_lite_coverage().map(|tx_copy| {
+                    self.send_transaction_lite_coverage(tx_copy);
+                });
 
                 if let Err(err) = self.check_accounts_rent(tx, &context) {
                     tx_result = Err(err);
@@ -997,89 +996,84 @@ impl LiteSVM {
         }
     }
 
-    pub fn sync_sysvars_with_lite_coverage(&self) {
-        let clock_sysvar = self.get_sysvar::<Clock>();
-        self.lite_coverage
-            .as_ref()
-            .unwrap()
-            .pt_context
-            .borrow_mut()
-            .set_sysvar(&clock_sysvar);
+    fn send_transaction_lite_coverage(&self, tx: SanitizedTransaction) {
+        self.lite_coverage.as_ref().map(|lite_coverage| {
+            // Sync Sysvars
+            self.sync_sysvars_with_lite_coverage();
+            // Sync Accounts
+            let tx_accounts = self.collect_accounts_for_lite_coverage(&tx);
 
-        let epoch_schedule_sysvar = self.get_sysvar::<EpochSchedule>();
-        self.lite_coverage
-            .as_ref()
-            .unwrap()
-            .pt_context
-            .borrow_mut()
-            .set_sysvar(&epoch_schedule_sysvar);
-
-        let fees_sysvar = self.get_sysvar::<Fees>();
-        self.lite_coverage
-            .as_ref()
-            .unwrap()
-            .pt_context
-            .borrow_mut()
-            .set_sysvar(&fees_sysvar);
-
-        let rent_sysvar = self.get_sysvar::<Rent>();
-        self.lite_coverage
-            .as_ref()
-            .unwrap()
-            .pt_context
-            .borrow_mut()
-            .set_sysvar(&rent_sysvar);
-
-        let epoch_rewards_sysvar = self.get_sysvar::<EpochRewards>();
-        self.lite_coverage
-            .as_ref()
-            .unwrap()
-            .pt_context
-            .borrow_mut()
-            .set_sysvar(&epoch_rewards_sysvar);
-
-        let recent_blockhashes_sysvar = self.get_sysvar::<RecentBlockhashes>();
-        self.lite_coverage
-            .as_ref()
-            .unwrap()
-            .pt_context
-            .borrow_mut()
-            .set_sysvar(&recent_blockhashes_sysvar);
-
-        let slot_hashed_sysvar = self.get_sysvar::<SlotHashes>();
-        self.lite_coverage
-            .as_ref()
-            .unwrap()
-            .pt_context
-            .borrow_mut()
-            .set_sysvar(&slot_hashed_sysvar);
-
-        let slot_history_sysvar = self.get_sysvar::<SlotHistory>();
-        self.lite_coverage
-            .as_ref()
-            .unwrap()
-            .pt_context
-            .borrow_mut()
-            .set_sysvar(&slot_history_sysvar);
-
-        let stake_history_sysvar = self.get_sysvar::<StakeHistory>();
-        self.lite_coverage
-            .as_ref()
-            .unwrap()
-            .pt_context
-            .borrow_mut()
-            .set_sysvar(&stake_history_sysvar);
-
-        let last_restart_slot_sysvar = self.get_sysvar::<LastRestartSlot>();
-        self.lite_coverage
-            .as_ref()
-            .unwrap()
-            .pt_context
-            .borrow_mut()
-            .set_sysvar(&last_restart_slot_sysvar);
+            let _ = lite_coverage.send_transaction(tx.to_versioned_transaction(), &tx_accounts);
+        });
     }
 
-    pub fn sync_accounts_with_lite_coverage(
+    fn sync_sysvars_with_lite_coverage(&self) {
+        self.lite_coverage.as_ref().map(|lite_coverage| {
+            let clock_sysvar = self.get_sysvar::<Clock>();
+            lite_coverage
+                .pt_context
+                .borrow_mut()
+                .set_sysvar(&clock_sysvar);
+
+            let epoch_schedule_sysvar = self.get_sysvar::<EpochSchedule>();
+            lite_coverage
+                .pt_context
+                .borrow_mut()
+                .set_sysvar(&epoch_schedule_sysvar);
+
+            #[allow(deprecated)]
+            let fees_sysvar = self.get_sysvar::<Fees>();
+            lite_coverage
+                .pt_context
+                .borrow_mut()
+                .set_sysvar(&fees_sysvar);
+
+            let rent_sysvar = self.get_sysvar::<Rent>();
+            lite_coverage
+                .pt_context
+                .borrow_mut()
+                .set_sysvar(&rent_sysvar);
+
+            let epoch_rewards_sysvar = self.get_sysvar::<EpochRewards>();
+            lite_coverage
+                .pt_context
+                .borrow_mut()
+                .set_sysvar(&epoch_rewards_sysvar);
+
+            #[allow(deprecated)]
+            let recent_blockhashes_sysvar = self.get_sysvar::<RecentBlockhashes>();
+            lite_coverage
+                .pt_context
+                .borrow_mut()
+                .set_sysvar(&recent_blockhashes_sysvar);
+
+            let slot_hashed_sysvar = self.get_sysvar::<SlotHashes>();
+            lite_coverage
+                .pt_context
+                .borrow_mut()
+                .set_sysvar(&slot_hashed_sysvar);
+
+            let slot_history_sysvar = self.get_sysvar::<SlotHistory>();
+            lite_coverage
+                .pt_context
+                .borrow_mut()
+                .set_sysvar(&slot_history_sysvar);
+
+            let stake_history_sysvar = self.get_sysvar::<StakeHistory>();
+            lite_coverage
+                .pt_context
+                .borrow_mut()
+                .set_sysvar(&stake_history_sysvar);
+
+            let last_restart_slot_sysvar = self.get_sysvar::<LastRestartSlot>();
+            lite_coverage
+                .pt_context
+                .borrow_mut()
+                .set_sysvar(&last_restart_slot_sysvar);
+        });
+    }
+
+    fn collect_accounts_for_lite_coverage(
         &self,
         tx: &SanitizedTransaction,
     ) -> Vec<(Pubkey, AccountSharedData)> {
@@ -1281,7 +1275,11 @@ impl LiteSVM {
         })
     }
 
-    pub fn with_coverage(&mut self, programs: Vec<NativeProgram>, additional_programs: Vec<AdditionalProgram>) -> LiteCoverageError<()> {
+    pub fn with_coverage(
+        &mut self,
+        programs: Vec<NativeProgram>,
+        additional_programs: Vec<AdditionalProgram>,
+    ) -> LiteCoverageError<()> {
         self.lite_coverage = Some(LiteCoverage::new(programs, additional_programs)?);
         Ok(())
     }
