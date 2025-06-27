@@ -15,7 +15,7 @@ use {
     solana_signer::Signer,
     solana_transaction::{versioned::VersionedTransaction, Transaction},
     solana_transaction_error::TransactionError,
-    std::{path::PathBuf, str::FromStr},
+    std::path::PathBuf,
 };
 
 const NUM_GREETINGS: u8 = 127;
@@ -29,12 +29,6 @@ fn read_counter_program() -> Vec<u8> {
 #[test]
 pub fn integration_test() {
     let mut svm = LiteSVM::new();
-    let _ = svm.add_native_program(vec![(
-        Pubkey::from_str("GtdambwDgHWrDJdVPBkEHGhCwokqgAoch162teUjJse2").unwrap(),
-        "counter".into(),
-        "/Users/boris/projects/litesvm/crates/litesvm/test_programs/target/debug/libcounter.dylib"
-            .into(),
-    )]);
     let payer_kp = Keypair::new();
     let payer_pk = payer_kp.pubkey();
     let program_id = pubkey!("GtdambwDgHWrDJdVPBkEHGhCwokqgAoch162teUjJse2");
@@ -45,7 +39,7 @@ pub fn integration_test() {
     let _ = svm.set_account(
         counter_address,
         Account {
-            lamports: 5000000,
+            lamports: 5,
             data: vec![0_u8; std::mem::size_of::<u32>()],
             owner: program_id,
             ..Default::default()
