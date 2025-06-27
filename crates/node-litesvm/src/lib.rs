@@ -275,12 +275,14 @@ impl LiteSvm {
             })
             .collect();
 
-        self.0.with_coverage(programs, additional_programs).map_err(|e| {
-            Error::new(
-                Status::GenericFailure,
-                format!("Failed to set programs for coverage: {e}"),
-            )
-        })?;
+        self.0
+            .with_coverage(programs, additional_programs)
+            .map_err(|e| {
+                Error::new(
+                    Status::GenericFailure,
+                    format!("Failed to set programs for coverage: {e}"),
+                )
+            })?;
         Ok(())
     }
 
