@@ -1,11 +1,9 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use {
     solana_account_info::{next_account_info, AccountInfo},
-    solana_clock::Clock,
     solana_msg::msg,
     solana_program_error::{ProgramError, ProgramResult},
     solana_pubkey::{declare_id, Pubkey},
-    solana_sysvar::Sysvar,
 };
 
 mod state;
@@ -25,15 +23,8 @@ pub fn process_instruction(
     instruction_data: &[u8],
 ) -> ProgramResult {
     let (instruction_discriminant, instruction_data_inner) = instruction_data.split_at(1);
-    msg!(
-        "accounts: {:#?}, instdata: {:#?}",
-        accounts,
-        instruction_data
-    );
     match instruction_discriminant[0] {
         0 => {
-            let got_clock = Clock::get()?;
-            msg!("Clock timestamp: {:?}", got_clock);
             msg!("Instruction: Increment");
             process_increment_counter(accounts, instruction_data_inner)?;
         }
@@ -62,7 +53,3 @@ pub fn process_increment_counter(
     msg!("Counter state incremented to {:?}", counter.count);
     Ok(())
 }
-
-use solana_program::instruction::AccountMeta;
-use solana_program::instruction::Instruction;
-sol_stubs::declare_sol_app_stubs!(process_instruction);
