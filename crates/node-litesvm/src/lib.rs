@@ -22,7 +22,7 @@ use {
             SimulatedTransactionInfo as SimulatedTransactionInfoOriginal,
             TransactionResult as TransactionResultOriginal,
         },
-        LiteSVM as LiteSVMOriginal, NativeProgram,
+        LiteSVM as LiteSVMOriginal,
     },
     napi::bindgen_prelude::*,
     solana_clock::Clock as ClockOriginal,
@@ -236,53 +236,43 @@ impl LiteSvm {
     }
 
     #[napi]
+    /// Load native programs as well as additional SBF programs in order to
+    /// provide code coverage.
     pub fn with_coverage(
         &mut self,
         programs: Vec<(String, Uint8Array, String)>,
         additional_programs: Vec<(String, Uint8Array)>,
     ) -> Result<()> {
-        let programs: Vec<(Pubkey, String, String)> = programs
-            .iter()
-            .map(|p| {
-                (
-                    Pubkey::new_from_array(
-                        p.1.to_vec()
-                            .try_into()
-                            .map_err(|_| {
-                                Error::new(Status::InvalidArg, "Program ID must be 32 bytes")
-                            })
-                            .unwrap(),
-                    ),
-                    p.0.clone(),
-                    p.2.clone(),
-                )
-            })
-            .collect();
-        let additional_programs: Vec<(Pubkey, String)> = additional_programs
-            .iter()
-            .map(|ap| {
-                (
-                    Pubkey::new_from_array(
-                        ap.1.to_vec()
-                            .try_into()
-                            .map_err(|_| {
-                                Error::new(Status::InvalidArg, "Program ID must be 32 bytes")
-                            })
-                            .unwrap(),
-                    ),
-                    ap.0.clone(),
-                )
-            })
-            .collect();
+        let mut progs: Vec<(Pubkey, String, String)> = vec![];
+        for p in programs {
+            progs.push((
+                Pubkey::new_from_array(
+                    p.1.to_vec().try_into().map_err(|_| {
+                        Error::new(Status::InvalidArg, "Program ID must be 32 bytes")
+                    })?,
+                ),
+                p.0.clone(),
+                p.2.clone(),
+            ));
+        }
+        let mut additional_progs: Vec<(Pubkey, String)> = vec![];
+        for ap in additional_programs {
+            additional_progs.push((
+                Pubkey::new_from_array(
+                    ap.1.to_vec().try_into().map_err(|_| {
+                        Error::new(Status::InvalidArg, "Program ID must be 32 bytes")
+                    })?,
+                ),
+                ap.0.clone(),
+            ));
+        }
 
-        self.0
-            .with_coverage(programs, additional_programs)
-            .map_err(|e| {
-                Error::new(
-                    Status::GenericFailure,
-                    format!("Failed to set programs for coverage: {e}"),
-                )
-            })?;
+        self.0.with_coverage(progs, additional_progs).map_err(|e| {
+            Error::new(
+                Status::GenericFailure,
+                format!("Failed to set programs for coverage: {e}"),
+            )
+        })?;
         Ok(())
     }
 

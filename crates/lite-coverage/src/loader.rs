@@ -1,4 +1,7 @@
-use crate::{stubs::{StubsManager, SyscallStubsApi, UnimplementedSyscallStubs, WrapperSyscallStubs}, types::LiteCoverageError};
+use crate::{
+    stubs::{StubsManager, SyscallStubsApi, UnimplementedSyscallStubs, WrapperSyscallStubs},
+    types::LiteCoverageError,
+};
 use libloading::{Library, Symbol};
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
