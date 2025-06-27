@@ -60,7 +60,7 @@ solana-program-option = "2.2"
 solana-program-pack = "2.2"
 solana-program-runtime = ">=2.2,<=2.2.4"
 #solana-program-test = "2.2"
-solana-program-test = { path = "../program-test" }
+solana-program-test = { git = "ssh://git@github.com/vlady-kotsev/program-test.git" }
 solana-pubkey = "2.2"
 solana-rent = "2.2"
 solana-reserved-account-keys = "2.2"
@@ -91,7 +91,8 @@ test-log = "0.2"
 thiserror = "2.0"
 tokio = "1.35"
 lite-coverage = { path = "crates/lite-coverage" }
-sol-stubs = { path = "../sol-stubs" }
+sol-stubs = { git = "ssh://git@github.com/procdump/sol-stubs.git", branch = "refactor" }
+
 [profile.bench]
 debug = true
 

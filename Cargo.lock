@@ -4208,6 +4208,7 @@ dependencies = [
 [[package]]
 name = "sol-stubs"
 version = "0.1.0"
+source = "git+ssh://git@github.com/procdump/sol-stubs.git?branch=refactor#944d40d32e57cf1169dfc444ffd63affe0403720"
 dependencies = [
  "lazy_static",
 ]
@@ -5695,6 +5696,7 @@ dependencies = [
 [[package]]
 name = "solana-program-test"
 version = "2.2.4"
+source = "git+ssh://git@github.com/vlady-kotsev/program-test.git#453e6f1bacc9dadc1911e2f411a1c7c44ca85124"
 dependencies = [
  "assert_matches",
  "async-trait",
