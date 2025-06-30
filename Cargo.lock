@@ -6807,8 +6807,7 @@ dependencies = [
 [[package]]
 name = "solana-transaction-context"
 version = "2.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5022de04cbba05377f68bf848c8c1322ead733f88a657bf792bb40f3257b8218"
+source = "git+ssh://git@github.com/vlady-kotsev/solana-transaction-context.git#3d709b99740c444f8f0ac8cf491da2396264be4a"
 dependencies = [
  "bincode",
  "serde",

@@ -1088,6 +1088,12 @@ impl LiteSVM {
                 }
             }
         }
+        // include instructions_sysvar account
+        let ix_account = construct_instructions_account(tx.message());
+        tx_accounts.push((
+            Pubkey::from_str_const("Sysvar1nstructions1111111111111111111111111"),
+            ix_account,
+        ));
         tx_accounts
     }
     fn check_accounts_rent(

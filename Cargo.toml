@@ -81,7 +81,7 @@ solana-sysvar = "2.2"
 solana-sysvar-id = "2.2"
 solana-timings = "2.2"
 solana-transaction = "2.2"
-solana-transaction-context = "2.2"
+solana-transaction-context = { git = "ssh://git@github.com/vlady-kotsev/solana-transaction-context.git" }
 solana-transaction-error = "2.2"
 solana-vote-program = "2.2"
 spl-associated-token-account-client = "2.0"
@@ -108,3 +108,6 @@ codegen-units = 1
 
 [workspace.lints.clippy]
 result_large_err = "allow"
+
+[patch.crates-io]
+solana-transaction-context = { git = "ssh://git@github.com/vlady-kotsev/solana-transaction-context.git" }
