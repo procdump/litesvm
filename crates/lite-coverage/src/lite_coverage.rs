@@ -1,3 +1,5 @@
+use solana_keypair::Keypair;
+
 use crate::{
     loader::{entrypoint, Loader},
     types::{LiteCoverageError, NativeProgram},
@@ -24,10 +26,13 @@ impl LiteCoverage {
     pub fn new(
         programs: Vec<NativeProgram>,
         additional_programs: Vec<AdditionalProgram>,
+        payer: Keypair,
     ) -> LiteCoverageError<Self> {
         let static_programs = Box::leak(Box::new(programs.clone()));
         let mut program_test = ProgramTest::default();
         program_test.prefer_bpf(false);
+        program_test.set_payer(payer);
+
         for (pubkey, name) in additional_programs.into_iter() {
             let name = Box::leak(Box::new(name));
             program_test.add_upgradeable_program_to_genesis(name, &pubkey);

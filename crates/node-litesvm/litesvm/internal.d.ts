@@ -560,7 +560,7 @@ export declare class LiteSvm {
    * Load native programs as well as additional SBF programs in order to
    * provide code coverage.
    */
-  withCoverage(programs: Array<[string, Uint8Array, string]>, additionalPrograms: Array<[string, Uint8Array]>): void
+  withCoverage(programs: Array<[string, Uint8Array, string]>, additionalPrograms: Array<[string, Uint8Array]>, payer: Uint8Array): void
   /** Adds am SBF program to the test environment. */
   addProgram(programId: Uint8Array, programBytes: Uint8Array): void
   sendLegacyTransaction(txBytes: Uint8Array): TransactionMetadata | FailedTransactionMetadata

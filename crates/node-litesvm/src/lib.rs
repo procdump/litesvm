@@ -28,6 +28,7 @@ use {
     solana_clock::Clock as ClockOriginal,
     solana_epoch_rewards::EpochRewards as EpochRewardsOriginal,
     solana_epoch_schedule::EpochSchedule as EpochScheduleOriginal,
+    solana_keypair::Keypair,
     solana_last_restart_slot::LastRestartSlot,
     solana_pubkey::Pubkey,
     solana_rent::Rent as RentOriginal,
@@ -242,6 +243,7 @@ impl LiteSvm {
         &mut self,
         programs: Vec<(String, Uint8Array, String)>,
         additional_programs: Vec<(String, Uint8Array)>,
+        payer: Uint8Array,
     ) -> Result<()> {
         let mut progs: Vec<(Pubkey, String, String)> = vec![];
         for p in programs {
@@ -267,12 +269,19 @@ impl LiteSvm {
             ));
         }
 
-        self.0.with_coverage(progs, additional_progs).map_err(|e| {
-            Error::new(
-                Status::GenericFailure,
-                format!("Failed to set programs for coverage: {e}"),
+        self.0
+            .with_coverage(
+                progs,
+                additional_progs,
+                Keypair::from_bytes(&payer)
+                    .map_err(|_| Error::new(Status::InvalidArg, "Invalid Payer Keypair bytes"))?,
             )
-        })?;
+            .map_err(|e| {
+                Error::new(
+                    Status::GenericFailure,
+                    format!("Failed to set programs for coverage: {e}"),
+                )
+            })?;
         Ok(())
     }
 

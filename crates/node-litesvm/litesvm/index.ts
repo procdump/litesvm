@@ -305,9 +305,10 @@ export class LiteSVM {
    */
   withCoverage(
     programs: Array<[string, Uint8Array, string]>,
-    additionalPrograms: Array<[string, Uint8Array]>
+    additionalPrograms: Array<[string, Uint8Array]>,
+    payer: Uint8Array
   ) {
-    return this.inner.withCoverage(programs, additionalPrograms);
+    return this.inner.withCoverage(programs, additionalPrograms, payer);
   }
 
   /**

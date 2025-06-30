@@ -902,15 +902,15 @@ dependencies = [
 
 [[package]]
 name = "console"
-version = "0.15.11"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "054ccb5b10f9f2cbf51eb355ca1d05c2d279ce1804688d0db74b4733a5aeafd8"
+checksum = "2e09ced7ebbccb63b4c65413d821f2e00ce54c5ca4514ddc6b3c892fdbcbc69d"
 dependencies = [
  "encode_unicode",
  "libc",
  "once_cell",
  "unicode-width",
- "windows-sys 0.59.0",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -2181,14 +2181,14 @@ dependencies = [
 
 [[package]]
 name = "indicatif"
-version = "0.17.11"
+version = "0.17.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "183b3088984b400f4cfac3620d5e076c84da5364016b4f49473de574b2586235"
+checksum = "4adb2ee6ad319a912210a36e56e3623555817bcc877a7e6e8802d1d69c4d8056"
 dependencies = [
  "console",
- "number_prefix",
  "portable-atomic",
  "unicode-width",
+ "unit-prefix",
  "web-time",
 ]
 
@@ -2566,6 +2566,7 @@ dependencies = [
  "solana-feature-set",
  "solana-hash",
  "solana-instruction",
+ "solana-keypair",
  "solana-last-restart-slot",
  "solana-message",
  "solana-precompiles",
@@ -2791,9 +2792,9 @@ dependencies = [
 
 [[package]]
 name = "napi-build"
-version = "2.2.1"
+version = "2.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "44e0e3177307063d3e7e55b7dd7b648cca9d7f46daa35422c0d98cc2bf48c2c1"
+checksum = "fff539e61c5e3dd4d7d283610662f5d672c2aea0f158df78af694f13dbb3287b"
 
 [[package]]
 name = "napi-derive"
@@ -3018,12 +3019,6 @@ dependencies = [
  "quote",
  "syn 2.0.104",
 ]
-
-[[package]]
-name = "number_prefix"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "830b246a0e5f20af87141b25c173cd1b609bd7779a4617d6ec582abaf90870f3"
 
 [[package]]
 name = "object"
@@ -4219,7 +4214,7 @@ dependencies = [
 [[package]]
 name = "sol-stubs"
 version = "0.1.0"
-source = "git+ssh://git@github.com/procdump/sol-stubs.git?branch=refactor#394190d3a700f0420eaca8d220686e948cd78895"
+source = "git+ssh://git@github.com/procdump/sol-stubs.git?branch=master#394190d3a700f0420eaca8d220686e948cd78895"
 dependencies = [
  "lazy_static",
 ]
@@ -5707,7 +5702,7 @@ dependencies = [
 [[package]]
 name = "solana-program-test"
 version = "2.2.4"
-source = "git+ssh://git@github.com/vlady-kotsev/program-test.git?branch=feat/processed-sibling#0f88d67ee59eb6f247ffbece98c12fc2369b3753"
+source = "git+ssh://git@github.com/vlady-kotsev/program-test.git#06de41f1dce54e1cbef0d7bd5860dffebf035eb3"
 dependencies = [
  "assert_matches",
  "async-trait",
@@ -5735,7 +5730,6 @@ dependencies = [
  "solana-sdk-ids",
  "solana-svm",
  "solana-timings",
- "solana-transaction-context",
  "solana-vote-program",
  "thiserror 2.0.12",
  "tokio",
@@ -6819,7 +6813,8 @@ dependencies = [
 [[package]]
 name = "solana-transaction-context"
 version = "2.2.1"
-source = "git+ssh://git@github.com/vlady-kotsev/solana-transaction-context.git#3d709b99740c444f8f0ac8cf491da2396264be4a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5022de04cbba05377f68bf848c8c1322ead733f88a657bf792bb40f3257b8218"
 dependencies = [
  "bincode",
  "serde",
@@ -8064,6 +8059,12 @@ name = "unicode-xid"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
+
+[[package]]
+name = "unit-prefix"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "323402cff2dd658f39ca17c789b502021b3f18707c91cdf22e3838e1b4023817"
 
 [[package]]
 name = "universal-hash"

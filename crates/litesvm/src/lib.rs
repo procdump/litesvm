@@ -1285,8 +1285,9 @@ impl LiteSVM {
         &mut self,
         programs: Vec<NativeProgram>,
         additional_programs: Vec<AdditionalProgram>,
+        payer: Keypair,
     ) -> LiteCoverageError<()> {
-        self.lite_coverage = Some(LiteCoverage::new(programs, additional_programs)?);
+        self.lite_coverage = Some(LiteCoverage::new(programs, additional_programs, payer)?);
         Ok(())
     }
 
