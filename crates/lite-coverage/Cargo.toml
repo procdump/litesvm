@@ -26,4 +26,4 @@ solana-sysvar = { workspace = true }
 solana-sdk-ids = { workspace = true }
 tokio = { workspace = true }
 lazy_static = "1.5.0"
-sol-stubs = { workspace = true }
+solana-program-stubs = { workspace = true }

@@ -1,7 +1,7 @@
 use std::sync::{Arc, RwLock};
 
-use sol_stubs::declare_sol_loader_stubs;
 use solana_program_error::ProgramResult;
+use solana_program_stubs::declare_sol_loader_stubs;
 use solana_sysvar::program_stubs::SyscallStubs;
 
 use solana_instruction::AccountMeta;

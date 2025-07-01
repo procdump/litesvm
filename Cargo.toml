@@ -91,7 +91,7 @@ test-log = "0.2"
 thiserror = "2.0"
 tokio = "1.35"
 lite-coverage = { path = "crates/lite-coverage" }
-sol-stubs = { git = "ssh://git@github.com/procdump/sol-stubs.git", branch = "master" }
+solana-program-stubs = { git = "ssh://git@github.com/procdump/sol-stubs.git", branch = "master", features = [ "loader_stubs" ] }
 
 [profile.bench]
 debug = true

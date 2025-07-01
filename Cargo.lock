@@ -2459,12 +2459,12 @@ dependencies = [
  "lazy_static",
  "libloading",
  "serde",
- "sol-stubs",
  "solana-account",
  "solana-instruction",
  "solana-keypair",
  "solana-program",
  "solana-program-error",
+ "solana-program-stubs",
  "solana-program-test",
  "solana-pubkey",
  "solana-sdk-ids",
@@ -4207,14 +4207,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sol-stubs"
-version = "0.1.0"
-source = "git+ssh://git@github.com/procdump/sol-stubs.git?branch=master#394190d3a700f0420eaca8d220686e948cd78895"
-dependencies = [
- "lazy_static",
-]
-
-[[package]]
 name = "solana-account"
 version = "2.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5692,6 +5684,14 @@ dependencies = [
  "solana-transaction-context",
  "solana-type-overrides",
  "thiserror 2.0.12",
+]
+
+[[package]]
+name = "solana-program-stubs"
+version = "0.1.0"
+source = "git+ssh://git@github.com/procdump/sol-stubs.git?branch=master#e232923f5bd1866e7d2e07e678d704c429d32808"
+dependencies = [
+ "lazy_static",
 ]
 
 [[package]]
