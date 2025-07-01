@@ -5697,7 +5697,7 @@ dependencies = [
 [[package]]
 name = "solana-program-test"
 version = "2.2.4"
-source = "git+ssh://git@github.com/vlady-kotsev/program-test.git#06de41f1dce54e1cbef0d7bd5860dffebf035eb3"
+source = "git+ssh://git@github.com/vlady-kotsev/program-test.git?branch=cov#01aff425901bad4972a9cb74c8f9890f8b6bba63"
 dependencies = [
  "assert_matches",
  "async-trait",
