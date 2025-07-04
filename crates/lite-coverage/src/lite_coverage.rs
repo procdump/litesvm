@@ -1,3 +1,5 @@
+use std::io::Write;
+
 use solana_keypair::Keypair;
 
 use crate::{
@@ -33,7 +35,7 @@ impl LiteCoverage {
         program_test.prefer_bpf(false);
         program_test.set_payer(payer);
 
-        for (pubkey, name) in additional_programs.into_iter() {
+        for (pubkey, name) in additional_programs.clone().into_iter() {
             let name = Box::leak(Box::new(name));
             program_test.add_upgradeable_program_to_genesis(name, &pubkey);
         }
@@ -55,6 +57,9 @@ impl LiteCoverage {
             pt_context
         });
         loader.adjust_stubs()?;
+
+        LiteCoverage::log_anchor_test_event_artifacts(programs.clone(), additional_programs)?;
+
         Ok(Self {
             pt_context: Arc::new(RefCell::new(pt_context)),
             programs,
@@ -109,6 +114,33 @@ impl LiteCoverage {
             println!("OUR TX RES: {:?}", res);
             Ok(())
         });
+        Ok(())
+    }
+
+    fn log_anchor_test_event_artifacts(
+        progs: Vec<NativeProgram>,
+        additional_progs: Vec<AdditionalProgram>,
+    ) -> LiteCoverageError<()> {
+        if let Ok(report_events) = std::env::var("ANCHOR_TEST_CODE_COVERAGE_REPORT_EVENTS") {
+            if report_events == "true" {
+                if let Ok(event_file) =
+                    std::env::var("ANCHOR_TEST_CODE_COVERAGE_ARTIFACTS_EVENT_FILE")
+                {
+                    let mut file = std::fs::OpenOptions::new()
+                        .create(true)
+                        .append(true)
+                        .write(true)
+                        .open(format!("{}.{}.log", event_file, std::process::id()))?;
+                    file.write_all("litesvm=true\n".as_bytes())?;
+                    for (pubkey, name, path) in &progs {
+                        file.write_all(format!("{}={},{}\n", name, pubkey, path).as_bytes())?;
+                    }
+                    for (pubkey, name) in &additional_progs {
+                        file.write_all(format!("{}={}\n", name, pubkey).as_bytes())?;
+                    }
+                }
+            }
+        }
         Ok(())
     }
 }
