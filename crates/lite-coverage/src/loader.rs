@@ -15,6 +15,11 @@ use std::{
 // type ProgramCEntrypoint = unsafe extern "C" fn(input: *mut u8) -> u64;
 type ProgramRustEntryPoint = unsafe extern "C" fn() -> *const ();
 type ProgramSetSyscallStubsApi = unsafe extern "C" fn(stubs_api: SyscallStubsApi);
+type Entrypoint = for<'a, 'b, 'info, 'c> fn(
+    &'a Pubkey,
+    &'b [AccountInfo<'info>],
+    &'c [u8],
+) -> Result<(), ProgramError>;
 
 lazy_static::lazy_static! (
     pub static ref PROGRAMS_MAP: Mutex<HashMap<Pubkey, AtomicPtr<()>>> = Mutex::new(HashMap::new());
@@ -27,7 +32,7 @@ pub fn entrypoint<'info>(
 ) -> ProgramResult {
     let map = PROGRAMS_MAP.lock().unwrap();
     let entry = map
-        .get(&*program_id)
+        .get(program_id)
         .unwrap()
         .load(std::sync::atomic::Ordering::Relaxed);
     let fn_ptr = entry as *const ();
@@ -68,7 +73,7 @@ impl Loader {
             // Now create the C interface so that the solana programs can reach our SYSCALL_STUBS!
             let stubs_api = SyscallStubsApi::new();
             // Pass it to the loaded smart contract!
-            self.set_syscall_stubs_api(&program_id, stubs_api)?;
+            self.set_syscall_stubs_api(program_id, stubs_api)?;
         }
         Ok(())
     }
@@ -83,9 +88,9 @@ impl Loader {
         self.libs
             .insert(*program_id, (program_name.to_string(), lib));
 
-        let fn_ptr = self.get_rust_entrypoint(&program_id)?;
+        let fn_ptr = self.get_rust_entrypoint(program_id)?;
         let mut programs_map = PROGRAMS_MAP.lock().unwrap();
-        programs_map.insert(program_id.clone(), AtomicPtr::new(fn_ptr as *mut _));
+        programs_map.insert(*program_id, AtomicPtr::new(fn_ptr as *mut _));
         Ok(())
     }
 
@@ -105,16 +110,7 @@ impl Loader {
         Ok(())
     }
 
-    fn get_rust_entrypoint(
-        &self,
-        program_id: &Pubkey,
-    ) -> LiteCoverageError<
-        for<'a, 'b, 'info, 'c> fn(
-            &'a Pubkey,
-            &'b [AccountInfo<'info>],
-            &'c [u8],
-        ) -> Result<(), ProgramError>,
-    > {
+    fn get_rust_entrypoint(&self, program_id: &Pubkey) -> LiteCoverageError<Entrypoint> {
         let func: Symbol<ProgramRustEntryPoint> = unsafe {
             self.libs
                 .get(program_id)
@@ -123,11 +119,7 @@ impl Loader {
                 .get(b"get_rust_entrypoint")?
         };
         let fn_ptr = unsafe { func() };
-        let rust_fn: for<'a, 'b, 'info, 'c> fn(
-            &'a Pubkey,
-            &'b [AccountInfo<'info>],
-            &'c [u8],
-        ) -> Result<(), ProgramError> = unsafe { std::mem::transmute(fn_ptr) };
+        let rust_fn: Entrypoint = unsafe { std::mem::transmute(fn_ptr) };
         Ok(rust_fn)
     }
 }

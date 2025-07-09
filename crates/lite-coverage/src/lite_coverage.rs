@@ -1,11 +1,11 @@
-use std::io::Write;
+use std::{io::Write, rc::Rc};
 
 use solana_keypair::Keypair;
 
 use crate::{
     loader::{entrypoint, Loader},
     types::{LiteCoverageError, NativeProgram},
-    AdditionalProgram,
+    AdditionalProgram, ProgramTestContextHandle,
 };
 use {
     solana_account::AccountSharedData,
@@ -20,8 +20,8 @@ use {
 #[derive(Clone)]
 pub struct LiteCoverage {
     pub programs: Vec<NativeProgram>,
-    pub pt_context: Arc<RefCell<ProgramTestContext>>,
-    rt: Arc<Box<Runtime>>,
+    pub pt_context: Rc<RefCell<Option<ProgramTestContext>>>,
+    rt: Arc<Runtime>,
 }
 
 impl LiteCoverage {
@@ -46,31 +46,37 @@ impl LiteCoverage {
                 "Adding native program {} with id: {}",
                 program_name, program_id
             );
-            loader.add_program(&so_path, &program_name, &program_id)?;
+            loader.add_program(so_path, program_name, program_id)?;
             program_test.add_program(program_name, *program_id, processor!(entrypoint));
         }
         println!("Loaded: {:?}", loader);
 
         let rt = tokio::runtime::Runtime::new()?;
-        let pt_context = rt.block_on(async move {
-            let pt_context = program_test.start_with_context().await;
-            pt_context
-        });
+        let pt_context = rt.block_on(async move { program_test.start_with_context().await });
         loader.adjust_stubs()?;
 
         LiteCoverage::log_anchor_test_event_artifacts(programs.clone(), additional_programs)?;
 
         Ok(Self {
-            pt_context: Arc::new(RefCell::new(pt_context)),
+            pt_context: Rc::new(RefCell::new(Some(pt_context))),
             programs,
-            rt: Arc::new(Box::new(rt)),
+            rt: Arc::new(rt),
         })
     }
 
+    pub fn get_program_test_context(&self) -> ProgramTestContextHandle {
+        assert!(
+            self.pt_context.borrow().is_some(),
+            "ProgramTestContext is already acquired!"
+        );
+        ProgramTestContextHandle::new(Rc::clone(&self.pt_context))
+    }
+
     pub fn add_account(&self, account_pubkey: &Pubkey, account_data: &AccountSharedData) {
-        self.pt_context
-            .borrow_mut()
-            .set_account(account_pubkey, account_data);
+        let mut pt_context = self.get_program_test_context();
+        if let Some(ctx) = &mut *pt_context {
+            ctx.set_account(account_pubkey, account_data);
+        }
     }
 
     async fn re_sign_tx(
@@ -78,18 +84,19 @@ impl LiteCoverage {
         tx: &VersionedTransaction,
     ) -> LiteCoverageError<VersionedTransaction> {
         // TODO tx must be resigned for all signers
-        let payer = &self.pt_context.borrow().payer;
-        let recent_blockhash = self
-            .pt_context
-            .borrow()
-            .banks_client
-            .get_latest_blockhash()
-            .await?;
+        let pt_context = self.get_program_test_context();
+        let ctx = pt_context
+            .as_ref()
+            .ok_or(Box::<dyn std::error::Error + Send + Sync>::from(
+                "Missing ProgramTestContext",
+            ))?;
+        let payer = ctx.payer.insecure_clone();
+        let recent_blockhash = ctx.banks_client.get_latest_blockhash().await?;
 
         let mut trans = tx.clone().into_legacy_transaction().unwrap();
-        trans.message.recent_blockhash = recent_blockhash.clone();
-        trans.message.account_keys[0] = payer.pubkey().clone();
-        trans.sign(&[&payer], recent_blockhash.clone());
+        trans.message.recent_blockhash = recent_blockhash;
+        trans.message.account_keys[0] = payer.pubkey();
+        trans.sign(&[&payer], recent_blockhash);
         Ok(VersionedTransaction::from(trans))
     }
 
@@ -104,9 +111,14 @@ impl LiteCoverage {
             }
             let re_signed_tx = self.re_sign_tx(&tx).await?;
 
-            let res = self
-                .pt_context
-                .borrow()
+            let pt_context = self.get_program_test_context();
+            let ctx =
+                pt_context
+                    .as_ref()
+                    .ok_or(Box::<dyn std::error::Error + Send + Sync>::from(
+                        "Missing ProgramTestContext",
+                    ))?;
+            let res = ctx
                 .banks_client
                 .process_transaction_with_metadata(re_signed_tx)
                 .await?;
