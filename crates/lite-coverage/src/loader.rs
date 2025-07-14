@@ -312,6 +312,21 @@ pub extern "C" fn sol_get_epoch_stake(vote_address: *const u8) -> u64 {
 }
 
 #[no_mangle]
+pub extern "C" fn sol_get_sysvar(
+    sysvar_id_addr: *const u8,
+    result: *mut u8,
+    offset: u64,
+    length: u64,
+) -> u64 {
+    crate::stubs::SYSCALL_STUBS.read().unwrap().sol_get_sysvar(
+        sysvar_id_addr,
+        result,
+        offset,
+        length,
+    )
+}
+
+#[no_mangle]
 pub extern "C" fn sol_log_pubkey(pubkey: *const u8) {
     let pubkey = unsafe {
         let mut inner = [0u8; 32];
