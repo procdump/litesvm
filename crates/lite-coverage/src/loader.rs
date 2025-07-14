@@ -336,6 +336,31 @@ pub extern "C" fn sol_set_return_data(data: *const u8, length: u64) {
 }
 
 #[no_mangle]
+pub extern "C" fn sol_get_return_data(data: *mut u8, length: u64, program_id: *mut Pubkey) -> u64 {
+    let ret_data = crate::stubs::SYSCALL_STUBS
+        .read()
+        .unwrap()
+        .sol_get_return_data();
+
+    match ret_data {
+        None => 0,
+        Some((key, src)) => {
+            // Judging from the signature we're expected to copy the data.
+            // Let's check if there's enough space.
+            let src_len = src.len() as _;
+            if src_len > length {
+                return 0;
+            }
+            unsafe {
+                *program_id = key;
+                std::ptr::copy_nonoverlapping(src.as_ptr(), data, length as _);
+            };
+            src_len
+        }
+    }
+}
+
+#[no_mangle]
 pub extern "C" fn sol_log_pubkey(pubkey: *const u8) {
     let pubkey = unsafe {
         let mut inner = [0u8; 32];
