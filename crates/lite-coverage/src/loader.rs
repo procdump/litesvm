@@ -264,6 +264,38 @@ pub extern "C" fn sol_get_clock_sysvar(addr: *mut u8) -> u64 {
 }
 
 #[no_mangle]
+pub extern "C" fn sol_get_epoch_schedule_sysvar(addr: *mut u8) -> u64 {
+    crate::stubs::SYSCALL_STUBS
+        .read()
+        .unwrap()
+        .sol_get_epoch_schedule_sysvar(addr)
+}
+
+#[no_mangle]
+pub extern "C" fn sol_get_fees_sysvar(addr: *mut u8) -> u64 {
+    crate::stubs::SYSCALL_STUBS
+        .read()
+        .unwrap()
+        .sol_get_fees_sysvar(addr)
+}
+
+#[no_mangle]
+pub extern "C" fn sol_get_rent_sysvar(addr: *mut u8) -> u64 {
+    crate::stubs::SYSCALL_STUBS
+        .read()
+        .unwrap()
+        .sol_get_rent_sysvar(addr)
+}
+
+#[no_mangle]
+pub extern "C" fn sol_get_epoch_rewards_sysvar(addr: *mut u8) -> u64 {
+    crate::stubs::SYSCALL_STUBS
+        .read()
+        .unwrap()
+        .sol_get_epoch_rewards_sysvar(addr)
+}
+
+#[no_mangle]
 pub extern "C" fn sol_log_pubkey(pubkey: *const u8) {
     let pubkey = unsafe {
         let mut inner = [0u8; 32];
