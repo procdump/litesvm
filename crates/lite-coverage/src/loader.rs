@@ -327,6 +327,15 @@ pub extern "C" fn sol_get_sysvar(
 }
 
 #[no_mangle]
+pub extern "C" fn sol_set_return_data(data: *const u8, length: u64) {
+    let slice = unsafe { std::slice::from_raw_parts(data, length as _) };
+    crate::stubs::SYSCALL_STUBS
+        .read()
+        .unwrap()
+        .sol_set_return_data(slice);
+}
+
+#[no_mangle]
 pub extern "C" fn sol_log_pubkey(pubkey: *const u8) {
     let pubkey = unsafe {
         let mut inner = [0u8; 32];
