@@ -20,11 +20,7 @@ lazy_static::lazy_static! (
     pub static ref PROGRAMS_MAP: Mutex<HashMap<Pubkey, AtomicPtr<()>>> = Mutex::new(HashMap::new());
 );
 
-pub fn entrypoint<'info>(
-    program_id: &Pubkey,
-    accounts: &[AccountInfo<'info>],
-    _data: &[u8],
-) -> ProgramResult {
+pub fn entrypoint(program_id: &Pubkey, accounts: &[AccountInfo], _data: &[u8]) -> ProgramResult {
     let map = PROGRAMS_MAP.lock().unwrap();
     let entry = map
         .get(program_id)
@@ -196,8 +192,8 @@ impl Loader {
 #[no_mangle]
 pub extern "C" fn sol_log_(msg: *const u8, len: u64) {
     let message = unsafe { std::slice::from_raw_parts(msg, len as _) };
-    let m = str::from_utf8(&message).unwrap();
-    crate::stubs::SYSCALL_STUBS.read().unwrap().sol_log(&m);
+    let m = str::from_utf8(message).unwrap();
+    crate::stubs::SYSCALL_STUBS.read().unwrap().sol_log(m);
 }
 
 #[no_mangle]
