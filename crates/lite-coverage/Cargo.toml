@@ -15,6 +15,7 @@ bs58 = { version = "0.5.1", default-features = false }
 borsh = "1.5.7"
 solana-program-test = { workspace = true }
 solana-account = { workspace = true }
+solana-bpf-loader-program.workspace = true
 solana-program = { workspace = true }
 solana-keypair = { workspace = true }
 solana-signer = { workspace = true }
@@ -22,6 +23,7 @@ solana-transaction = { workspace = true }
 solana-instruction = { workspace = true }
 solana-pubkey = { workspace = true }
 solana-program-error = { workspace = true }
+solana-program-entrypoint = { workspace = true }
 solana-sysvar = { workspace = true }
 solana-sdk-ids = { workspace = true }
 tokio = { workspace = true }

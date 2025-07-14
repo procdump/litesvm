@@ -2460,9 +2460,11 @@ dependencies = [
  "libloading",
  "serde",
  "solana-account",
+ "solana-bpf-loader-program",
  "solana-instruction",
  "solana-keypair",
  "solana-program",
+ "solana-program-entrypoint",
  "solana-program-error",
  "solana-program-stubs",
  "solana-program-test",
@@ -2524,6 +2526,7 @@ dependencies = [
  "solana-nonce",
  "solana-nonce-account",
  "solana-precompiles",
+ "solana-program-entrypoint",
  "solana-program-error",
  "solana-program-option",
  "solana-program-pack",
@@ -5697,7 +5700,7 @@ dependencies = [
 [[package]]
 name = "solana-program-test"
 version = "2.2.4"
-source = "git+ssh://git@github.com/vlady-kotsev/program-test.git?branch=cov#01aff425901bad4972a9cb74c8f9890f8b6bba63"
+source = "git+ssh://git@github.com/vlady-kotsev/program-test.git?branch=cov#4c23a39b9a2ad60494ac5b5da1c8dfb699c855ed"
 dependencies = [
  "assert_matches",
  "async-trait",
