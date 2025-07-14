@@ -56,8 +56,8 @@ pub fn entrypoint<'info>(
         solana_program_entrypoint::deserialize(&mut parameter_bytes.as_slice_mut()[0] as *mut u8)
     };
 
-    let len = accounts.len();
-    for i in 0..len {
+    let accounts_len = accounts.len();
+    for i in 0..accounts_len {
         if accounts[i].lamports() != updated_account_infos[i].lamports() {
             // Lamports have changed - update.
             (**accounts[i].lamports.borrow_mut()) = updated_account_infos[i].lamports();
