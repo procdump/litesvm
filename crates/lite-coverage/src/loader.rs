@@ -46,56 +46,51 @@ pub fn entrypoint(program_id: &Pubkey, accounts: &[AccountInfo], _data: &[u8]) -
         .map_err(|_| ProgramError::InvalidArgument)?;
 
     let res = unsafe { entry(parameter_bytes.as_slice().as_ptr() as *mut _) };
-
-    // Deserialize data back into instruction params
-    let (_, updated_account_infos, _) = unsafe {
-        solana_program_entrypoint::deserialize(&mut parameter_bytes.as_slice_mut()[0] as *mut u8)
-    };
-
-    let accounts_len = accounts.len();
-    for i in 0..accounts_len {
-        if accounts[i].lamports() != updated_account_infos[i].lamports() {
-            // Lamports have changed - update.
-            (**accounts[i].lamports.borrow_mut()) = updated_account_infos[i].lamports();
-        }
-        if *accounts[i].data.borrow() != *updated_account_infos[i].data.borrow() {
-            // Account data has changed - update.
-            let new_data = updated_account_infos[i].data.borrow_mut().to_vec();
-            let boxed: Box<[u8]> = new_data.into_boxed_slice();
-            let leaked = Box::leak(Box::new(boxed));
-            *accounts[i].data.borrow_mut() = leaked;
-        }
-
-        // https://github.com/anza-xyz/agave/blob/master/program-test/src/lib.rs#L359
-        // NB: https://doc.rust-lang.org/nomicon/transmutes.html
-        // Transmuting an & to &mut is Undefined Behavior.
-        // While certain usages may appear safe, note that the Rust
-        // optimizer is free to assume that a shared reference won't
-        // change through its lifetime and thus such transmutation will
-        // run afoul of those assumptions. So:
-        // - Transmuting an & to &mut is always Undefined Behavior.
-        // - No you can't do it.
-        // - No you're not special.
-        if accounts[i].key != updated_account_infos[i].key {
-            // Account key has changed - update.
-            #[allow(clippy::transmute_ptr_to_ptr)]
-            #[allow(mutable_transmutes)]
-            let account_info_mut =
-                unsafe { std::mem::transmute::<&Pubkey, &mut Pubkey>(accounts[i].key) };
-            *account_info_mut = *updated_account_infos[i].key;
-        }
-
-        if accounts[i].owner != updated_account_infos[i].owner {
-            // Account owner has changed - update.
-            #[allow(clippy::transmute_ptr_to_ptr)]
-            #[allow(mutable_transmutes)]
-            let account_info_mut =
-                unsafe { std::mem::transmute::<&Pubkey, &mut Pubkey>(accounts[i].owner) };
-            *account_info_mut = *updated_account_infos[i].owner;
-        }
-    }
-
     if res == 0 {
+        // Deserialize data back into instruction params
+        let (_, updated_account_infos, _) = unsafe {
+            solana_program_entrypoint::deserialize(
+                &mut parameter_bytes.as_slice_mut()[0] as *mut u8,
+            )
+        };
+
+        let accounts_len = accounts.len();
+        for i in 0..accounts_len {
+            if accounts[i].lamports() != updated_account_infos[i].lamports() {
+                // Lamports have changed - update.
+                (**accounts[i].lamports.borrow_mut()) = updated_account_infos[i].lamports();
+            }
+            if *accounts[i].data.borrow() != *updated_account_infos[i].data.borrow() {
+                // Account data has changed - update.
+                let new_data = updated_account_infos[i].data.borrow_mut().to_vec();
+                let boxed: Box<[u8]> = new_data.into_boxed_slice();
+                let leaked = Box::leak(Box::new(boxed));
+                *accounts[i].data.borrow_mut() = leaked;
+            }
+
+            // Account key has changed - update.
+            let key_mut_ptr = accounts[i].key.as_array().as_ptr() as *mut u8;
+            updated_account_infos[i]
+                .key
+                .as_array()
+                .iter()
+                .enumerate()
+                .for_each(|(i, b)| {
+                    unsafe { *key_mut_ptr.add(i) = *b };
+                });
+
+            // Account owner has changed - update.
+            let owner_mut_ptr = accounts[i].owner.as_array().as_ptr() as *mut u8;
+            updated_account_infos[i]
+                .owner
+                .as_array()
+                .iter()
+                .enumerate()
+                .for_each(|(i, b)| {
+                    unsafe { *owner_mut_ptr.add(i) = *b };
+                });
+        }
+
         Ok(())
     } else {
         Err(ProgramError::Custom(res as _))
