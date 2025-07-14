@@ -192,6 +192,22 @@ pub extern "C" fn sol_log_(msg: *const u8, len: u64) {
 }
 
 #[no_mangle]
+pub extern "C" fn sol_log_compute_units_() {
+    crate::stubs::SYSCALL_STUBS
+        .read()
+        .unwrap()
+        .sol_log_compute_units();
+}
+
+#[no_mangle]
+pub extern "C" fn sol_remaining_compute_units() -> u64 {
+    crate::stubs::SYSCALL_STUBS
+        .read()
+        .unwrap()
+        .sol_remaining_compute_units()
+}
+
+#[no_mangle]
 pub extern "C" fn sol_log_pubkey(pubkey: *const u8) {
     let pubkey = unsafe {
         let mut inner = [0u8; 32];
