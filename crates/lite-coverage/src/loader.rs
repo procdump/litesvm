@@ -183,12 +183,12 @@ impl Loader {
     }
 }
 
-// REVISIT: pinocchio's single syscall impl for now
+// REVISIT: pinocchio's syscalls impls are here for now
 #[no_mangle]
 pub extern "C" fn sol_log_(msg: *const u8, len: u64) {
     let message = unsafe { std::slice::from_raw_parts(msg, len as _) };
-    let m = str::from_utf8(message).unwrap();
-    crate::stubs::SYSCALL_STUBS.read().unwrap().sol_log(m);
+    let m = String::from_utf8_lossy(message);
+    crate::stubs::SYSCALL_STUBS.read().unwrap().sol_log(&m);
 }
 
 #[no_mangle]
