@@ -208,6 +208,46 @@ pub extern "C" fn sol_remaining_compute_units() -> u64 {
 }
 
 #[no_mangle]
+pub extern "C" fn sol_memcpy_(dst: *mut u8, src: *const u8, n: u64) {
+    unsafe {
+        crate::stubs::SYSCALL_STUBS
+            .read()
+            .unwrap()
+            .sol_memcpy(dst, src, n as _);
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn sol_memmove_(dst: *mut u8, src: *const u8, n: u64) {
+    unsafe {
+        crate::stubs::SYSCALL_STUBS
+            .read()
+            .unwrap()
+            .sol_memmove(dst, src, n as _);
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn sol_memcmp_(s1: *const u8, s2: *const u8, n: u64, result: *mut i32) {
+    unsafe {
+        crate::stubs::SYSCALL_STUBS
+            .read()
+            .unwrap()
+            .sol_memcmp(s1, s2, n as _, result);
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn sol_memset_(s: *mut u8, c: u8, n: u64) {
+    unsafe {
+        crate::stubs::SYSCALL_STUBS
+            .read()
+            .unwrap()
+            .sol_memset(s, c, n as _);
+    }
+}
+
+#[no_mangle]
 pub extern "C" fn sol_log_pubkey(pubkey: *const u8) {
     let pubkey = unsafe {
         let mut inner = [0u8; 32];
