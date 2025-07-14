@@ -248,6 +248,14 @@ pub extern "C" fn sol_memset_(s: *mut u8, c: u8, n: u64) {
 }
 
 #[no_mangle]
+pub extern "C" fn sol_get_stack_height() -> u64 {
+    crate::stubs::SYSCALL_STUBS
+        .read()
+        .unwrap()
+        .sol_get_stack_height()
+}
+
+#[no_mangle]
 pub extern "C" fn sol_log_pubkey(pubkey: *const u8) {
     let pubkey = unsafe {
         let mut inner = [0u8; 32];
