@@ -49,98 +49,54 @@ pub fn entrypoint<'info>(
         )
         .map_err(|_| ProgramError::InvalidArgument)?;
 
-    let ix_input_before = parameter_bytes.as_slice().to_vec();
     let res = unsafe { entry(parameter_bytes.as_slice().as_ptr() as *mut _) };
-    if ix_input_before != parameter_bytes.as_slice() {
-        // Deserialize data back into instruction params
-        let (_, updated_account_infos, _) = unsafe {
-            solana_program_entrypoint::deserialize(
-                &mut parameter_bytes.as_slice_mut()[0] as *mut u8,
-            )
-        };
 
-        // println!(
-        //     "DIFFERENT inputs, is data different: {}",
-        //     data != updated_data
-        // );
-        // Persist the changes
-        println!(
-            "accounts.len(): {}, updated_account_infos.len(): {}",
-            accounts.len(),
-            updated_account_infos.len()
-        );
-        let _ = std::fs::write(
-            "/tmp/new_accounts.txt",
-            format!("{:#?}", updated_account_infos),
-        );
-        // #[allow(clippy::transmute_ptr_to_ptr)]
-        // #[allow(mutable_transmutes)]
-        // let accounts = unsafe { std::mem::transmute::<&[AccountInfo<'info>], &mut [AccountInfo<'info>]>(accounts) };
-        let len = accounts.len();
-        for i in 0..len {
+    // Deserialize data back into instruction params
+    let (_, updated_account_infos, _) = unsafe {
+        solana_program_entrypoint::deserialize(&mut parameter_bytes.as_slice_mut()[0] as *mut u8)
+    };
+
+    let len = accounts.len();
+    for i in 0..len {
+        if accounts[i].lamports() != updated_account_infos[i].lamports() {
+            // Lamports have changed - update.
             (**accounts[i].lamports.borrow_mut()) = updated_account_infos[i].lamports();
+        }
+        if *accounts[i].data.borrow() != *updated_account_infos[i].data.borrow() {
+            // Account data has changed - update.
             let new_data = updated_account_infos[i].data.borrow_mut().to_vec();
             let boxed: Box<[u8]> = new_data.into_boxed_slice();
             let leaked = Box::leak(Box::new(boxed));
             *accounts[i].data.borrow_mut() = leaked;
+        }
 
-            // unsafe {
-            //     (*accounts)[i].is_signer = updated_account_infos[i].is_signer;
-            //     (*accounts)[i].is_writable = updated_account_infos[i].is_writable;
-            //     (*accounts)[i].executable = updated_account_infos[i].executable;
-            //     (*accounts)[i].rent_epoch = updated_account_infos[i].rent_epoch;
-            // }
+        // https://github.com/anza-xyz/agave/blob/master/program-test/src/lib.rs#L359
+        // NB: https://doc.rust-lang.org/nomicon/transmutes.html
+        // Transmuting an & to &mut is Undefined Behavior.
+        // While certain usages may appear safe, note that the Rust
+        // optimizer is free to assume that a shared reference won't
+        // change through its lifetime and thus such transmutation will
+        // run afoul of those assumptions. So:
+        // - Transmuting an & to &mut is always Undefined Behavior.
+        // - No you can't do it.
+        // - No you're not special.
+        if accounts[i].key != updated_account_infos[i].key {
+            // Account key has changed - update.
             #[allow(clippy::transmute_ptr_to_ptr)]
             #[allow(mutable_transmutes)]
             let account_info_mut =
                 unsafe { std::mem::transmute::<&Pubkey, &mut Pubkey>(accounts[i].key) };
             *account_info_mut = *updated_account_infos[i].key;
+        }
+
+        if accounts[i].owner != updated_account_infos[i].owner {
+            // Account owner has changed - update.
             #[allow(clippy::transmute_ptr_to_ptr)]
             #[allow(mutable_transmutes)]
             let account_info_mut =
                 unsafe { std::mem::transmute::<&Pubkey, &mut Pubkey>(accounts[i].owner) };
             *account_info_mut = *updated_account_infos[i].owner;
-            // #[allow(clippy::transmute_ptr_to_ptr)]
-            // #[allow(mutable_transmutes)]
-            // let account_info_mut =
-            //     unsafe { std::mem::transmute::<&u64, &mut u64>(&accounts[i].rent_epoch) };
-            // *account_info_mut = updated_account_infos[i].rent_epoch;
-            // #[allow(clippy::transmute_ptr_to_ptr)]
-            // #[allow(mutable_transmutes)]
-            // let account_info_mut =
-            //     unsafe { std::mem::transmute::<&bool, &mut bool>(&accounts[i].is_signer) };
-            // *account_info_mut = updated_account_infos[i].is_signer;
-            // #[allow(clippy::transmute_ptr_to_ptr)]
-            // #[allow(mutable_transmutes)]
-            // let account_info_mut =
-            //     unsafe { std::mem::transmute::<&bool, &mut bool>(&accounts[i].is_writable) };
-            // *account_info_mut = updated_account_infos[i].is_writable;
-            // #[allow(clippy::transmute_ptr_to_ptr)]
-            // #[allow(mutable_transmutes)]
-            // let account_info_mut =
-            //     unsafe { std::mem::transmute::<&bool, &mut bool>(&accounts[i].executable) };
-            // *account_info_mut = updated_account_infos[i].executable;
         }
-        // for (dst, src) in accounts.iter().zip(updated_account_infos.iter()) {
-        //     println!("account {} updated: {}", dst.key, src.key);
-
-        //     **dst.lamports.borrow_mut() = src.lamports();
-        //     {
-        //         let src_data = src.data.borrow_mut();
-        //         let mut dst_data = dst.data.borrow_mut();
-        //         println!("NEW LEN: {}, OLD LEN: {}", src_data.len(), dst_data.len());
-
-        //         let _ = std::mem::replace(&mut dst_data, src_data);
-        //     }
-        // }
-
-        // let _ = std::fs::write("/tmp/old_accounts.txt", format!("{:#02x?}", accounts));
-        // let _ = std::fs::write("/tmp/old_data.txt", format!("{:#02x?}", data));
-        // let _ = std::fs::write("/tmp/new_data.txt", format!("{:#02x?}", _updated_data));
-        // panic!("STOP");
-        // // if data != updated_data {
-        // //     let mut_ref_data: &mut [u8] = unsafe { std::mem::transmute(data) };
-        // // }
     }
 
     if res == 0 {
