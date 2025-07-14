@@ -192,7 +192,15 @@ pub extern "C" fn sol_log_(msg: *const u8, len: u64) {
 }
 
 #[no_mangle]
-pub extern "C" fn sol_log_pubkey(_pubkey: *const u8) {
-    println!("Unimplemented sol_log_pubkey syscall!");
+pub extern "C" fn sol_log_pubkey(pubkey: *const u8) {
+    let pubkey = unsafe {
+        let mut inner = [0u8; 32];
+        std::ptr::copy_nonoverlapping(pubkey, inner.as_mut_ptr(), 32);
+        Pubkey::new_from_array(inner)
+    };
+    crate::stubs::SYSCALL_STUBS
+        .read()
+        .unwrap()
+        .sol_log(&pubkey.to_string());
 }
 // REVISIT
