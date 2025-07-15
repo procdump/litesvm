@@ -370,6 +370,22 @@ pub extern "C" fn sol_get_return_data(data: *mut u8, length: u64, program_id: *m
 }
 
 #[no_mangle]
+pub extern "C" fn sol_log_data(data: *const u8, data_len: u64) {
+    // reinterpret the buffer as a fat pointer to (*const u8, usize) pairs
+    let fat_ptrs = data as *const (*const u8, usize);
+    let mut v: Vec<&[u8]> = Vec::with_capacity(data_len as _);
+    for i in 0..data_len {
+        let (data_ptr, len) = unsafe { *fat_ptrs.add(i as _) };
+        let slice = unsafe { std::slice::from_raw_parts(data_ptr, len) };
+        v.push(slice);
+    }
+    crate::stubs::SYSCALL_STUBS
+        .read()
+        .unwrap()
+        .sol_log_data(&v[..]);
+}
+
+#[no_mangle]
 pub extern "C" fn sol_log_pubkey(pubkey: *const u8) {
     let pubkey = unsafe {
         let mut inner = [0u8; 32];
