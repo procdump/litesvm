@@ -5,7 +5,7 @@ use crate::{
 };
 use core::str;
 use libloading::{Library, Symbol};
-use solana_instruction::{BorrowedAccountMeta, ProcessedSiblingInstruction};
+use solana_instruction::ProcessedSiblingInstruction;
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
     program_stubs::set_syscall_stubs, pubkey::Pubkey,
@@ -384,6 +384,13 @@ pub extern "C" fn sol_log_data(data: *const u8, data_len: u64) {
         .read()
         .unwrap()
         .sol_log_data(&v[..]);
+}
+
+#[repr(C)]
+pub struct BorrowedAccountMeta<'a> {
+    pub pubkey: &'a Pubkey,
+    pub is_signer: bool,
+    pub is_writable: bool,
 }
 
 #[no_mangle]
