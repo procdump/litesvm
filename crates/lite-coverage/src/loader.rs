@@ -5,6 +5,7 @@ use crate::{
 };
 use core::str;
 use libloading::{Library, Symbol};
+use solana_instruction::{AccountMeta, ProcessedSiblingInstruction};
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
     program_stubs::set_syscall_stubs, pubkey::Pubkey,
@@ -383,6 +384,57 @@ pub extern "C" fn sol_log_data(data: *const u8, data_len: u64) {
         .read()
         .unwrap()
         .sol_log_data(&v[..]);
+}
+
+#[no_mangle]
+pub extern "C" fn sol_get_processed_sibling_instruction(
+    index: u64,
+    meta: *mut ProcessedSiblingInstruction,
+    program_id: *mut Pubkey,
+    data: *mut u8,
+    accounts: *mut AccountMeta,
+) -> u64 {
+    let instruction = crate::stubs::SYSCALL_STUBS
+        .read()
+        .unwrap()
+        .sol_get_processed_sibling_instruction(index as _);
+    match instruction {
+        None => 0, // 0 - No processed sibling instruction.
+        Some(instr) => {
+            let data_len = instr.data.len();
+            let accounts_len = instr.accounts.len();
+            unsafe {
+                if (*meta).accounts_len == 0 && (*meta).data_len == 0 {
+                    // Caller is wondering how many to allocate.
+                    // https://github.com/anza-xyz/solana-sdk/blob/master/instruction/src/syscalls.rs#L32
+                    (*meta).data_len = data_len as _;
+                    (*meta).accounts_len = accounts_len as _;
+                    *program_id = instr.program_id;
+
+                    // 1 - Return the allocation details so that caller can prepare.
+                    return 1;
+                }
+            }
+
+            // Caller is ready with the allocation.
+            // But first - a little sanity check.
+            unsafe {
+                if (*meta).data_len != data_len as u64
+                    || (*meta).accounts_len != accounts_len as u64
+                    || *program_id != instr.program_id
+                {
+                    return 0;
+                }
+
+                // Now just copy the data and the account metas.
+                std::ptr::copy_nonoverlapping(instr.data.as_ptr(), data, data_len);
+                // NB: Mind that Pinocchio uses its AccountMeta with
+                // &Pubkey instead of Pubkey in it - which seems not quite right.
+                std::ptr::copy_nonoverlapping(instr.accounts.as_ptr(), accounts, accounts_len);
+            }
+            2 // 2 - All good.
+        }
+    }
 }
 
 #[no_mangle]
