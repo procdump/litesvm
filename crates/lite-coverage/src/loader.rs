@@ -5,7 +5,7 @@ use crate::{
 };
 use core::str;
 use libloading::{Library, Symbol};
-use solana_instruction::{AccountMeta, ProcessedSiblingInstruction};
+use solana_instruction::{BorrowedAccountMeta, ProcessedSiblingInstruction};
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
     program_stubs::set_syscall_stubs, pubkey::Pubkey,
@@ -392,7 +392,7 @@ pub extern "C" fn sol_get_processed_sibling_instruction(
     meta: *mut ProcessedSiblingInstruction,
     program_id: *mut Pubkey,
     data: *mut u8,
-    accounts: *mut AccountMeta,
+    accounts: *mut BorrowedAccountMeta,
 ) -> u64 {
     let instruction = crate::stubs::SYSCALL_STUBS
         .read()
@@ -428,9 +428,14 @@ pub extern "C" fn sol_get_processed_sibling_instruction(
 
                 // Now just copy the data and the account metas.
                 std::ptr::copy_nonoverlapping(instr.data.as_ptr(), data, data_len);
-                // NB: Mind that Pinocchio uses its AccountMeta with
-                // &Pubkey instead of Pubkey in it - which seems not quite right.
-                std::ptr::copy_nonoverlapping(instr.accounts.as_ptr(), accounts, accounts_len);
+                // Now copy the account metas taking into consideration that pubkey is a borrow!
+                // https://github.com/anza-xyz/pinocchio/blob/main/sdk/pinocchio/src/instruction.rs#L116
+                for i in 0..instr.accounts.len() {
+                    let account_meta = accounts.add(i);
+                    (*account_meta).is_signer = instr.accounts[i].is_signer;
+                    (*account_meta).is_writable = instr.accounts[i].is_writable;
+                    (*account_meta).pubkey = Box::leak(Box::new(instr.accounts[i].pubkey));
+                }
             }
             2 // 2 - All good.
         }
