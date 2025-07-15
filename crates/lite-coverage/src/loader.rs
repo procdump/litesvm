@@ -1,4 +1,5 @@
 use crate::{
+    sbf,
     stubs::{StubsManager, SyscallStubsApi, UnimplementedSyscallStubs, WrapperSyscallStubs},
     types::LiteCoverageError,
 };
@@ -45,11 +46,19 @@ pub fn entrypoint(program_id: &Pubkey, accounts: &[AccountInfo], _data: &[u8]) -
         )
         .map_err(|_| ProgramError::InvalidArgument)?;
 
+    // Make a copy prior to calling the entrypoint fn, we'll use it
+    // for deserialization of the post-instruction updated input.
+    let mut parameter_bytes_copy = parameter_bytes.clone();
     let res = unsafe { entry(parameter_bytes.as_slice().as_ptr() as *mut _) };
     if res == 0 {
-        // Deserialize data back into instruction params
+        // Deserialize data back into instruction params advancing on the old input
+        // while using values from the new input. The reason for this is that
+        // some programs may repurpose and change the value of bytes in the old input which
+        // in the end may break the canonical deserialization.
+        // So try to to do our best to extract what we need while following the correct format.
         let (_, updated_account_infos, _) = unsafe {
-            solana_program_entrypoint::deserialize(
+            sbf::deserialize_updated_account_infos(
+                &mut parameter_bytes_copy.as_slice_mut()[0] as *const u8,
                 &mut parameter_bytes.as_slice_mut()[0] as *mut u8,
             )
         };
