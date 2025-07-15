@@ -97,7 +97,7 @@ pub unsafe fn deserialize_updated_account_infos<'a>(
 
     let mut accounts = Vec::with_capacity(num_accounts);
     for _ in 0..num_accounts {
-        let dup_info = *(old_input.add(offset) as *const u8);
+        let dup_info = *(old_input.add(offset));
         offset += size_of::<u8>();
         if dup_info == NON_DUP_MARKER {
             let (account_info, new_offset) = deserialize_account_info(offset, new_input);
