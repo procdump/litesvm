@@ -812,5 +812,55 @@ impl solana_sysvar::program_stubs::SyscallStubs for SolAppSyscallStubs2 {
         }
         None
     }
+    fn sol_invoke_signed(
+        &self,
+        instruction: &Instruction,
+        account_infos: &[AccountInfo],
+        signers_seeds: &[&[&[u8]]],
+    ) -> ProgramResult {
+        let mut caccounts = vec![];
+        for account_meta in &instruction.accounts {
+            let caccount = CAccountMeta {
+                is_signer: account_meta.is_signer,
+                is_writable: account_meta.is_writable,
+                pubkey: &account_meta.pubkey as *const _ as *const CPubkey,
+            };
+            caccounts.push(caccount);
+        }
+        let cinstr = CInstruction {
+            program_id: &instruction.program_id as *const _ as *const CPubkey,
+            accounts_len: instruction.accounts.len() as _,
+            data_len: instruction.data.len() as _,
+            accounts: caccounts.as_ptr(),
+            data: instruction.data.as_ptr(),
+        };
+        let mut caccount_infos = vec![];
+        for account_info in account_infos {
+            let caccount_info = CAccountInfo {
+                is_signer: account_info.is_signer,
+                is_writable: account_info.is_writable,
+                executable: account_info.executable,
+                rent_epoch: account_info.rent_epoch,
+                data_len: account_info.data_len() as _,
+                data: account_info.data.borrow().as_ptr(),
+                lamports: *account_info.lamports.borrow(),
+                key: account_info.key as *const _ as *const CPubkey,
+                owner: account_info.owner as *const _ as *const CPubkey,
+            };
+            caccount_infos.push(caccount_info);
+        }
+        let res = (self.stubs_api2.sol_invoke_signed_c)(
+            &cinstr as *const _ as *const u8,
+            caccount_infos.as_ptr() as *const u8,
+            caccount_infos.len() as _,
+            signers_seeds.as_ptr() as *const u8,
+            signers_seeds.len() as _,
+        );
+        if res == 0 {
+            Ok(())
+        } else {
+            Err(ProgramError::Custom(res as _))
+        }
+    }
 }
 // REVISIT
