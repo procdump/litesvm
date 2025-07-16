@@ -345,8 +345,11 @@ pub extern "C" fn sol_set_return_data(data: *const u8, length: u64) {
         .sol_set_return_data(slice);
 }
 
+pub const PUBKEY_BYTES: usize = 32;
+pub type CPubkey = [u8; PUBKEY_BYTES];
+
 #[no_mangle]
-pub extern "C" fn sol_get_return_data(data: *mut u8, length: u64, program_id: *mut Pubkey) -> u64 {
+pub extern "C" fn sol_get_return_data(data: *mut u8, length: u64, program_id: *mut CPubkey) -> u64 {
     let ret_data = crate::stubs::SYSCALL_STUBS
         .read()
         .unwrap()
@@ -357,14 +360,14 @@ pub extern "C" fn sol_get_return_data(data: *mut u8, length: u64, program_id: *m
         Some((key, src)) => {
             // Caller is wondering how many to allocate.
             if length == 0 {
-                unsafe { *program_id = key };
+                unsafe { *program_id = *key.as_array() };
                 return src.len() as _;
             }
 
             // Caller is ready with the allocation - we're expected to copy the data.
             // Let's check if there's enough space.
             let src_len = src.len() as _;
-            if src_len > length || unsafe { *program_id } != key {
+            if src_len > length || unsafe { *program_id } != *key.as_array() {
                 return 0;
             }
             unsafe {
@@ -399,7 +402,7 @@ pub struct CProcessedSiblingInstruction {
 
 #[repr(C)]
 pub struct CAccountMeta {
-    pub pubkey: *const u8,
+    pub pubkey: *const CPubkey,
     pub is_writable: bool,
     pub is_signer: bool,
 }
@@ -408,7 +411,7 @@ pub struct CAccountMeta {
 pub extern "C" fn sol_get_processed_sibling_instruction(
     index: u64,
     meta: *mut CProcessedSiblingInstruction,
-    program_id: *mut Pubkey,
+    program_id: *mut CPubkey,
     data: *mut u8,
     accounts: *mut CAccountMeta,
 ) -> u64 {
@@ -427,7 +430,7 @@ pub extern "C" fn sol_get_processed_sibling_instruction(
                     // https://github.com/anza-xyz/solana-sdk/blob/master/instruction/src/syscalls.rs#L32
                     (*meta).data_len = data_len as _;
                     (*meta).accounts_len = accounts_len as _;
-                    *program_id = instr.program_id;
+                    *program_id = *instr.program_id.as_array();
 
                     // 1 - Return the allocation details so that caller can prepare.
                     return 1;
@@ -439,7 +442,7 @@ pub extern "C" fn sol_get_processed_sibling_instruction(
             unsafe {
                 if (*meta).data_len != data_len as u64
                     || (*meta).accounts_len != accounts_len as u64
-                    || *program_id != instr.program_id
+                    || *program_id != *instr.program_id.as_array()
                 {
                     return 0;
                 }
@@ -452,8 +455,8 @@ pub extern "C" fn sol_get_processed_sibling_instruction(
                     let account_meta = accounts.add(i);
                     (*account_meta).is_signer = instr.accounts[i].is_signer;
                     (*account_meta).is_writable = instr.accounts[i].is_writable;
-                    (*account_meta).pubkey =
-                        Box::leak(Box::new(instr.accounts[i].pubkey)) as *const _ as *const u8;
+                    (*account_meta).pubkey = Box::leak(Box::new(instr.accounts[i].pubkey))
+                        as *const _ as *const [u8; 32];
                 }
             }
             2 // 2 - All good.
@@ -462,10 +465,9 @@ pub extern "C" fn sol_get_processed_sibling_instruction(
 }
 
 #[repr(C)]
-#[derive(Clone)]
 pub struct CAccountInfo {
     // Public key of the account.
-    key: *const Pubkey,
+    key: *const CPubkey,
 
     // Number of lamports owned by this account.
     lamports: *const u64,
@@ -477,7 +479,7 @@ pub struct CAccountInfo {
     data: *const u8,
 
     // Program that owns this account.
-    owner: *const Pubkey,
+    owner: *const CPubkey,
 
     // The epoch at which this account will next owe rent.
     rent_epoch: u64,
@@ -495,7 +497,7 @@ pub struct CAccountInfo {
 #[repr(C)]
 struct CInstruction {
     /// Public key of the program.
-    program_id: *const Pubkey,
+    program_id: *const CPubkey,
 
     /// Accounts expected by the program instruction.
     accounts: *const CAccountMeta,
@@ -522,14 +524,13 @@ pub extern "C" fn sol_invoke_signed_c(
     let cinstr = instruction_addr as *const CInstruction;
     let instruction = unsafe {
         Instruction {
-            program_id: *(*cinstr).program_id.clone(),
+            program_id: Pubkey::new_from_array(*(*cinstr).program_id),
             accounts: {
                 (0..(*cinstr).accounts_len)
-                    .into_iter()
                     .map(|i| {
                         let cam = (*cinstr).accounts.add(i as _);
                         AccountMeta {
-                            pubkey: Pubkey::new_from_array(*(*(*cam).pubkey as *const [u8; 32])),
+                            pubkey: Pubkey::new_from_array(*(*cam).pubkey),
                             is_signer: (*cam).is_signer,
                             is_writable: (*cam).is_writable,
                         }
@@ -550,7 +551,7 @@ pub extern "C" fn sol_invoke_signed_c(
         let (cai, _) = unsafe { *ai_fat_ptr.add(i as _) };
         let ai = unsafe {
             AccountInfo {
-                key: &*(*cai).key,
+                key: &*((*cai).key as *const Pubkey),
                 lamports: std::rc::Rc::new(std::cell::RefCell::new(
                     &mut *((*cai).lamports as *mut _),
                 )),
@@ -559,7 +560,7 @@ pub extern "C" fn sol_invoke_signed_c(
                         std::slice::from_raw_parts_mut((*cai).data as _, (*cai).data_len as _);
                     std::rc::Rc::new(std::cell::RefCell::new(slice))
                 },
-                owner: &*(*cai).owner,
+                owner: &*((*cai).owner as *const Pubkey),
                 rent_epoch: (*cai).rent_epoch,
                 is_signer: (*cai).is_signer,
                 is_writable: (*cai).is_writable,
@@ -597,11 +598,7 @@ pub extern "C" fn sol_invoke_signed_c(
 
 #[no_mangle]
 pub extern "C" fn sol_log_pubkey(pubkey: *const u8) {
-    let pubkey = unsafe {
-        let mut inner = [0u8; 32];
-        std::ptr::copy_nonoverlapping(pubkey, inner.as_mut_ptr(), 32);
-        Pubkey::new_from_array(inner)
-    };
+    let pubkey = unsafe { &*(pubkey as *const Pubkey) };
     crate::stubs::SYSCALL_STUBS
         .read()
         .unwrap()
