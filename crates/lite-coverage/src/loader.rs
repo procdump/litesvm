@@ -401,10 +401,21 @@ pub struct CProcessedSiblingInstruction {
 }
 
 #[repr(C)]
+#[derive(Clone)]
 pub struct CAccountMeta {
     pub pubkey: *const CPubkey,
     pub is_writable: bool,
     pub is_signer: bool,
+}
+
+impl Default for CAccountMeta {
+    fn default() -> Self {
+        Self {
+            pubkey: &[0u8; 32],
+            is_writable: false,
+            is_signer: false,
+        }
+    }
 }
 
 #[no_mangle]
@@ -603,5 +614,203 @@ pub extern "C" fn sol_log_pubkey(pubkey: *const u8) {
         .read()
         .unwrap()
         .sol_log(&pubkey.to_string());
+}
+
+#[repr(C)]
+pub struct SyscallStubsApi2 {
+    pub sol_log_: extern "C" fn(message: *const u8, len: u64),
+    pub sol_log_compute_units_: extern "C" fn(),
+    pub sol_remaining_compute_units: extern "C" fn() -> u64,
+    pub sol_invoke_signed_c: extern "C" fn(
+        instruction_addr: *const u8,
+        account_infos_addr: *const u8,
+        account_infos_len: u64,
+        signers_seeds_addr: *const u8,
+        signers_seeds_len: u64,
+    ) -> u64,
+    pub sol_get_clock_sysvar: extern "C" fn(addr: *mut u8) -> u64,
+    pub sol_get_epoch_schedule_sysvar: extern "C" fn(addr: *mut u8) -> u64,
+    pub sol_get_fees_sysvar: extern "C" fn(addr: *mut u8) -> u64,
+    pub sol_get_rent_sysvar: extern "C" fn(addr: *mut u8) -> u64,
+    pub sol_get_last_restart_slot: extern "C" fn(addr: *mut u8) -> u64,
+    pub sol_get_sysvar:
+        extern "C" fn(sysvar_id_addr: *const u8, result: *mut u8, offset: u64, length: u64) -> u64,
+    pub sol_memcpy_: extern "C" fn(dst: *mut u8, src: *const u8, n: u64),
+    pub sol_memmove_: extern "C" fn(dst: *mut u8, src: *const u8, n: u64),
+    pub sol_memcmp_: extern "C" fn(s1: *const u8, s2: *const u8, n: u64, result: *mut i32),
+    pub sol_memset_: extern "C" fn(s: *mut u8, c: u8, n: u64),
+    pub sol_get_return_data:
+        extern "C" fn(data: *mut u8, length: u64, program_id: *mut CPubkey) -> u64,
+    pub sol_set_return_data: extern "C" fn(data: *const u8, length: u64),
+    pub sol_log_data: extern "C" fn(data: *const u8, data_len: u64),
+    pub sol_get_processed_sibling_instruction: extern "C" fn(
+        index: u64,
+        meta: *mut CProcessedSiblingInstruction,
+        program_id: *mut CPubkey,
+        data: *mut u8,
+        accounts: *mut CAccountMeta,
+    ) -> u64,
+    pub sol_get_stack_height: extern "C" fn() -> u64,
+    pub sol_get_epoch_rewards_sysvar: extern "C" fn(addr: *mut u8) -> u64,
+    pub sol_get_epoch_stake: extern "C" fn(vote_address: *const u8) -> u64,
+}
+
+impl SyscallStubsApi2 {
+    pub fn new() -> Self {
+        Self {
+            sol_get_clock_sysvar,
+            sol_get_epoch_rewards_sysvar,
+            sol_get_epoch_schedule_sysvar,
+            sol_get_fees_sysvar,
+            sol_get_last_restart_slot,
+            sol_get_rent_sysvar,
+            sol_get_stack_height,
+            sol_log_,
+            sol_log_compute_units_,
+            sol_memcmp_,
+            sol_memcpy_,
+            sol_memmove_,
+            sol_memset_,
+            sol_remaining_compute_units,
+            sol_get_return_data,
+            sol_set_return_data,
+            sol_log_data,
+            sol_invoke_signed_c,
+            sol_get_processed_sibling_instruction,
+            sol_get_epoch_stake,
+            sol_get_sysvar,
+        }
+    }
+}
+
+#[repr(C)]
+pub struct SolAppSyscallStubs2 {
+    pub stubs_api2: SyscallStubsApi2,
+}
+
+impl solana_sysvar::program_stubs::SyscallStubs for SolAppSyscallStubs2 {
+    fn sol_get_clock_sysvar(&self, var_addr: *mut u8) -> u64 {
+        (self.stubs_api2.sol_get_clock_sysvar)(var_addr)
+    }
+    fn sol_get_epoch_rewards_sysvar(&self, var_addr: *mut u8) -> u64 {
+        (self.stubs_api2.sol_get_epoch_rewards_sysvar)(var_addr)
+    }
+    fn sol_get_epoch_schedule_sysvar(&self, var_addr: *mut u8) -> u64 {
+        (self.stubs_api2.sol_get_epoch_schedule_sysvar)(var_addr)
+    }
+    fn sol_get_epoch_stake(&self, vote_address: *const u8) -> u64 {
+        (self.stubs_api2.sol_get_epoch_stake)(vote_address)
+    }
+    fn sol_get_fees_sysvar(&self, var_addr: *mut u8) -> u64 {
+        (self.stubs_api2.sol_get_fees_sysvar)(var_addr)
+    }
+    fn sol_get_last_restart_slot(&self, var_addr: *mut u8) -> u64 {
+        (self.stubs_api2.sol_get_last_restart_slot)(var_addr)
+    }
+    fn sol_get_rent_sysvar(&self, var_addr: *mut u8) -> u64 {
+        (self.stubs_api2.sol_get_rent_sysvar)(var_addr)
+    }
+    fn sol_get_stack_height(&self) -> u64 {
+        (self.stubs_api2.sol_get_stack_height)()
+    }
+    fn sol_remaining_compute_units(&self) -> u64 {
+        (self.stubs_api2.sol_remaining_compute_units)()
+    }
+    unsafe fn sol_memcmp(&self, s1: *const u8, s2: *const u8, n: usize, result: *mut i32) {
+        (self.stubs_api2.sol_memcmp_)(s1, s2, n as u64, result);
+    }
+    unsafe fn sol_memcpy(&self, dst: *mut u8, src: *const u8, n: usize) {
+        (self.stubs_api2.sol_memcpy_)(dst, src, n as u64)
+    }
+    unsafe fn sol_memmove(&self, dst: *mut u8, src: *const u8, n: usize) {
+        (self.stubs_api2.sol_memmove_)(dst, src, n as u64)
+    }
+    unsafe fn sol_memset(&self, s: *mut u8, c: u8, n: usize) {
+        (self.stubs_api2.sol_memset_)(s, c, n as u64)
+    }
+    fn sol_get_sysvar(
+        &self,
+        sysvar_id_addr: *const u8,
+        var_addr: *mut u8,
+        offset: u64,
+        length: u64,
+    ) -> u64 {
+        (self.stubs_api2.sol_get_sysvar)(sysvar_id_addr, var_addr, offset, length)
+    }
+    fn sol_log_compute_units(&self) {
+        (self.stubs_api2.sol_log_compute_units_)()
+    }
+    fn sol_log(&self, message: &str) {
+        (self.stubs_api2.sol_log_)(message.as_ptr(), message.len() as u64)
+    }
+    fn sol_log_data(&self, fields: &[&[u8]]) {
+        (self.stubs_api2.sol_log_data)(fields.as_ptr() as *const u8, fields.len() as u64);
+    }
+    fn sol_set_return_data(&self, data: &[u8]) {
+        (self.stubs_api2.sol_set_return_data)(data.as_ptr(), data.len() as u64);
+    }
+    fn sol_get_return_data(&self) -> Option<(Pubkey, Vec<u8>)> {
+        let mut program_id = [0u8; 32];
+        let data_bytes_to_alloc =
+            (self.stubs_api2.sol_get_return_data)(&mut u8::default(), 0, &mut program_id);
+        if data_bytes_to_alloc == 0 {
+            return None;
+        }
+        let mut vdata = vec![0u8; data_bytes_to_alloc as usize];
+        let same_bytes_num_expected = (self.stubs_api2.sol_get_return_data)(
+            vdata.as_mut_ptr(),
+            vdata.len() as _,
+            &mut program_id,
+        );
+        if same_bytes_num_expected == data_bytes_to_alloc {
+            return Some((Pubkey::new_from_array(program_id), vdata));
+        } else {
+            None
+        }
+    }
+    fn sol_get_processed_sibling_instruction(&self, index: usize) -> Option<Instruction> {
+        let mut meta = CProcessedSiblingInstruction {
+            accounts_len: 0,
+            data_len: 0,
+        };
+        let mut program_id = [0u8; 32];
+        if 1 == (self.stubs_api2.sol_get_processed_sibling_instruction)(
+            index as _,
+            &mut meta,
+            &mut program_id,
+            &mut u8::default(),
+            &mut CAccountMeta::default(),
+        ) {
+            let accounts_to_alloc = meta.accounts_len;
+            let data_bytes_to_alloc = meta.data_len;
+            let mut caccount_metas = vec![CAccountMeta::default(); accounts_to_alloc as _];
+            let mut vdata = vec![0u8; data_bytes_to_alloc as _];
+            let res = (self.stubs_api2.sol_get_processed_sibling_instruction)(
+                index as _,
+                &mut meta,
+                &mut program_id,
+                vdata.as_mut_ptr(),
+                caccount_metas.as_mut_ptr(),
+            );
+            if res != 0 && res != 1 {
+                let mut account_metas = vec![];
+                for cai in &caccount_metas {
+                    let pubkey = unsafe { *Box::from_raw(cai.pubkey as *mut _) };
+                    let account_meta = AccountMeta {
+                        is_signer: cai.is_signer,
+                        is_writable: cai.is_writable,
+                        pubkey: Pubkey::new_from_array(pubkey),
+                    };
+                    account_metas.push(account_meta);
+                }
+                return Some(Instruction {
+                    accounts: account_metas,
+                    data: vdata,
+                    program_id: program_id.into(),
+                });
+            }
+        }
+        None
+    }
 }
 // REVISIT
