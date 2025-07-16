@@ -763,7 +763,7 @@ impl solana_sysvar::program_stubs::SyscallStubs for SolAppSyscallStubs2 {
             &mut program_id,
         );
         if same_bytes_num_expected == data_bytes_to_alloc {
-            return Some((Pubkey::new_from_array(program_id), vdata));
+            Some((Pubkey::new_from_array(program_id), vdata))
         } else {
             None
         }
