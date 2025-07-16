@@ -5,7 +5,7 @@ use crate::{
 };
 use core::str;
 use libloading::{Library, Symbol};
-use solana_instruction::{AccountMeta, ProcessedSiblingInstruction};
+use solana_instruction::{AccountMeta, Instruction};
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
     program_stubs::set_syscall_stubs, pubkey::Pubkey,
@@ -355,14 +355,19 @@ pub extern "C" fn sol_get_return_data(data: *mut u8, length: u64, program_id: *m
     match ret_data {
         None => 0,
         Some((key, src)) => {
-            // Judging from the signature we're expected to copy the data.
+            // Caller is wondering how many to allocate.
+            if length == 0 {
+                unsafe { *program_id = key };
+                return src.len() as _;
+            }
+
+            // Caller is ready with the allocation - we're expected to copy the data.
             // Let's check if there's enough space.
             let src_len = src.len() as _;
-            if src_len > length {
+            if src_len > length || unsafe { *program_id } != key {
                 return 0;
             }
             unsafe {
-                *program_id = key;
                 std::ptr::copy_nonoverlapping(src.as_ptr(), data, length as _);
             };
             src_len
@@ -373,11 +378,11 @@ pub extern "C" fn sol_get_return_data(data: *mut u8, length: u64, program_id: *m
 #[no_mangle]
 pub extern "C" fn sol_log_data(data: *const u8, data_len: u64) {
     // reinterpret the buffer as a fat pointer to (*const u8, usize) pairs
-    let fat_ptrs = data as *const (*const u8, usize);
+    let fat_ptrs = data as *const (*const u8, u64);
     let mut v: Vec<&[u8]> = Vec::with_capacity(data_len as _);
     for i in 0..data_len {
         let (data_ptr, len) = unsafe { *fat_ptrs.add(i as _) };
-        let slice = unsafe { std::slice::from_raw_parts(data_ptr, len) };
+        let slice = unsafe { std::slice::from_raw_parts(data_ptr, len as _) };
         v.push(slice);
     }
     crate::stubs::SYSCALL_STUBS
@@ -386,14 +391,15 @@ pub extern "C" fn sol_log_data(data: *const u8, data_len: u64) {
         .sol_log_data(&v[..]);
 }
 
-// Pinocchio's layout:
-// 1) pubkey is a borrow
-// 2) is_writable is before is_signer
-// ProcessedSiblingInstruction is the same.
-// TODO: maybe import pinocchio to skip redeclarations?
 #[repr(C)]
-pub struct BorrowedAccountMeta<'a> {
-    pub pubkey: &'a Pubkey,
+pub struct CProcessedSiblingInstruction {
+    pub data_len: u64,
+    pub accounts_len: u64,
+}
+
+#[repr(C)]
+pub struct CAccountMeta {
+    pub pubkey: *const u8,
     pub is_writable: bool,
     pub is_signer: bool,
 }
@@ -401,10 +407,10 @@ pub struct BorrowedAccountMeta<'a> {
 #[no_mangle]
 pub extern "C" fn sol_get_processed_sibling_instruction(
     index: u64,
-    meta: *mut ProcessedSiblingInstruction,
+    meta: *mut CProcessedSiblingInstruction,
     program_id: *mut Pubkey,
     data: *mut u8,
-    accounts: *mut BorrowedAccountMeta,
+    accounts: *mut CAccountMeta,
 ) -> u64 {
     let instruction = crate::stubs::SYSCALL_STUBS
         .read()
@@ -440,17 +446,152 @@ pub extern "C" fn sol_get_processed_sibling_instruction(
 
                 // Now just copy the data and the account metas.
                 std::ptr::copy_nonoverlapping(instr.data.as_ptr(), data, data_len);
-                // Now copy the account metas taking into consideration that pubkey is a borrow!
+                // Now copy the account metas taking into consideration that pubkey is a *const u8.
                 // https://github.com/anza-xyz/pinocchio/blob/main/sdk/pinocchio/src/instruction.rs#L116
                 for i in 0..instr.accounts.len() {
                     let account_meta = accounts.add(i);
                     (*account_meta).is_signer = instr.accounts[i].is_signer;
                     (*account_meta).is_writable = instr.accounts[i].is_writable;
-                    (*account_meta).pubkey = Box::leak(Box::new(instr.accounts[i].pubkey));
+                    (*account_meta).pubkey =
+                        Box::leak(Box::new(instr.accounts[i].pubkey)) as *const _ as *const u8;
                 }
             }
             2 // 2 - All good.
         }
+    }
+}
+
+#[repr(C)]
+#[derive(Clone)]
+pub struct CAccountInfo {
+    // Public key of the account.
+    key: *const Pubkey,
+
+    // Number of lamports owned by this account.
+    lamports: *const u64,
+
+    // Length of data in bytes.
+    data_len: u64,
+
+    // On-chain data within this account.
+    data: *const u8,
+
+    // Program that owns this account.
+    owner: *const Pubkey,
+
+    // The epoch at which this account will next owe rent.
+    rent_epoch: u64,
+
+    // Transaction was signed by this account's key?
+    is_signer: bool,
+
+    // Is the account writable?
+    is_writable: bool,
+
+    // This account's data contains a loaded program (and is now read-only).
+    executable: bool,
+}
+
+#[repr(C)]
+struct CInstruction {
+    /// Public key of the program.
+    program_id: *const Pubkey,
+
+    /// Accounts expected by the program instruction.
+    accounts: *const CAccountMeta,
+
+    /// Number of accounts expected by the program instruction.
+    accounts_len: u64,
+
+    /// Data expected by the program instruction.
+    data: *const u8,
+
+    /// Length of the data expected by the program instruction.
+    data_len: u64,
+}
+
+#[no_mangle]
+pub extern "C" fn sol_invoke_signed_c(
+    instruction_addr: *const u8,
+    account_infos_addr: *const u8,
+    account_infos_len: u64,
+    signers_seeds_addr: *const u8,
+    signers_seeds_len: u64,
+) -> u64 {
+    // instruction
+    let cinstr = instruction_addr as *const CInstruction;
+    let instruction = unsafe {
+        Instruction {
+            program_id: *(*cinstr).program_id.clone(),
+            accounts: {
+                (0..(*cinstr).accounts_len)
+                    .into_iter()
+                    .map(|i| {
+                        let cam = (*cinstr).accounts.add(i as _);
+                        AccountMeta {
+                            pubkey: Pubkey::new_from_array(*(*(*cam).pubkey as *const [u8; 32])),
+                            is_signer: (*cam).is_signer,
+                            is_writable: (*cam).is_writable,
+                        }
+                    })
+                    .collect()
+            },
+            data: {
+                let slice = std::slice::from_raw_parts((*cinstr).data, (*cinstr).data_len as _);
+                slice.to_vec()
+            },
+        }
+    };
+
+    // account_infos
+    let ai_fat_ptr = account_infos_addr as *const (*const CAccountInfo, u64);
+    let mut account_infos: Vec<AccountInfo<'_>> = vec![];
+    for i in 0..account_infos_len {
+        let (cai, _) = unsafe { *ai_fat_ptr.add(i as _) };
+        let ai = unsafe {
+            AccountInfo {
+                key: &*(*cai).key,
+                lamports: std::rc::Rc::new(std::cell::RefCell::new(
+                    &mut *((*cai).lamports as *mut _),
+                )),
+                data: {
+                    let slice =
+                        std::slice::from_raw_parts_mut((*cai).data as _, (*cai).data_len as _);
+                    std::rc::Rc::new(std::cell::RefCell::new(slice))
+                },
+                owner: &*(*cai).owner,
+                rent_epoch: (*cai).rent_epoch,
+                is_signer: (*cai).is_signer,
+                is_writable: (*cai).is_writable,
+                executable: (*cai).executable,
+            }
+        };
+        account_infos.push(ai);
+    }
+
+    // signers_seeds
+    let q_fat_ptr = signers_seeds_addr as *const (*const u8, u64);
+    let mut qv: Vec<Vec<&[u8]>> = vec![];
+    for q in 0..signers_seeds_len {
+        let (q_data_ptr, q_data_len) = unsafe { *q_fat_ptr.add(q as _) };
+        let mut pv: Vec<&[u8]> = vec![];
+        for p in 0..q_data_len {
+            let p_fat_ptr = q_data_ptr as *const (*const u8, u64);
+            let (p_data_ptr, p_data_len) = unsafe { *p_fat_ptr.add(p as _) };
+            let slice = unsafe { std::slice::from_raw_parts(p_data_ptr, p_data_len as usize) };
+            pv.push(slice);
+        }
+        qv.push(pv);
+    }
+
+    let signers_seeds: Vec<_> = qv.iter().map(|e| &e[..]).collect();
+    match crate::stubs::SYSCALL_STUBS
+        .read()
+        .unwrap()
+        .sol_invoke_signed(&instruction, &account_infos[..], &signers_seeds[..])
+    {
+        Ok(_) => 0,
+        Err(e) => e.into(),
     }
 }
 
