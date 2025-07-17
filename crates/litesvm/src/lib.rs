@@ -929,7 +929,7 @@ impl LiteSVM {
                     }
                 };
 
-                let mut tx_result: Result<(), TransactionError> = process_message(
+                let mut tx_result = process_message(
                     tx.message(),
                     &program_indices,
                     &mut InvokeContext::new(
