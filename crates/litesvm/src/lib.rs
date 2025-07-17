@@ -974,8 +974,6 @@ impl LiteSVM {
                 )
                 .map(|_| ());
 
-                println!("ORIGINAL TX DONE");
-
                 if let Some(tx_copy) = tx_lite_coverage() {
                     self.send_transaction_lite_coverage(tx_copy);
                 }
@@ -1260,7 +1258,6 @@ impl LiteSVM {
 
     /// Submits a signed transaction.
     pub fn send_transaction(&mut self, tx: impl Into<VersionedTransaction>) -> TransactionResult {
-        println!("Send transaction!");
         let log_collector = LogCollector {
             bytes_limit: self.log_bytes_limit,
             ..Default::default()

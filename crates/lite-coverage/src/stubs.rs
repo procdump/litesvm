@@ -21,7 +21,6 @@ impl StubsManager {
 pub struct WrapperSyscallStubs {}
 impl SyscallStubs for WrapperSyscallStubs {
     fn sol_get_clock_sysvar(&self, var_addr: *mut u8) -> u64 {
-        println!("Wrapper sol_get_clock_sysvar");
         SYSCALL_STUBS.read().unwrap().sol_get_clock_sysvar(var_addr)
     }
     fn sol_get_epoch_rewards_sysvar(&self, var_addr: *mut u8) -> u64 {

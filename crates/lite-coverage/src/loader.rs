@@ -174,7 +174,7 @@ impl Loader {
                 // REVISIT: The idea behind is this to try working with stubs
                 // and if not neccesary (as is the case with pinocchio as it
                 // seems for now) to continue
-                println!("Can't set stubs, error: {}! Go on", e);
+                log::warn!("Can't set stubs, error: {}! Proceed forward..", e);
             }
         }
         Ok(())

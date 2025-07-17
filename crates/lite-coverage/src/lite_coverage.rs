@@ -42,14 +42,15 @@ impl LiteCoverage {
 
         let mut loader = Loader::new();
         for (program_id, program_name, so_path) in static_programs.iter() {
-            println!(
-                "Adding native program {} with id: {}",
-                program_name, program_id
+            log::info!(
+                "Adding native program {} with program id: {}",
+                program_name,
+                program_id
             );
             loader.add_program(so_path, program_name, program_id)?;
             program_test.add_program(program_name, *program_id, processor!(entrypoint));
         }
-        println!("Loaded: {:?}", loader);
+        log::info!("Loaded: {:?}", loader);
 
         let rt = tokio::runtime::Runtime::new()?;
         let pt_context = rt.block_on(async move { program_test.start_with_context().await });
@@ -123,7 +124,7 @@ impl LiteCoverage {
                 .process_transaction_with_metadata(re_signed_tx)
                 .await?;
 
-            println!("OUR TX RES: {:?}", res);
+            log::info!("LiteCoverage transaction result: {:#?}", res);
             Ok(())
         });
         Ok(())
