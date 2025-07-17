@@ -81,7 +81,7 @@ unsafe fn deserialize_instruction_data<'a>(input: *mut u8, mut offset: usize) ->
 }
 
 #[allow(clippy::arithmetic_side_effects)]
-pub unsafe fn deserialize_updated_account_infos<'a>(
+pub(crate) unsafe fn deserialize_updated_account_infos<'a>(
     old_input: *const u8,
     new_input: *mut u8,
 ) -> (&'a Pubkey, Vec<AccountInfo<'a>>, &'a [u8]) {
