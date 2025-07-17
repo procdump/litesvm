@@ -21,6 +21,8 @@ lazy_static::lazy_static! (
     pub static ref PROGRAMS_MAP: Mutex<HashMap<Pubkey, AtomicPtr<()>>> = Mutex::new(HashMap::new());
 );
 
+/// ProgramTest invokes this entrypoint to dispatch to the right entrypoint
+/// of the natively loaded SBF avatars.
 pub fn entrypoint(program_id: &Pubkey, accounts: &[AccountInfo], _data: &[u8]) -> ProgramResult {
     let map = PROGRAMS_MAP.lock().unwrap();
     let entry = map
@@ -106,21 +108,24 @@ pub fn entrypoint(program_id: &Pubkey, accounts: &[AccountInfo], _data: &[u8]) -
     }
 }
 
+/// A loader object to track loaded SBF avatars.
 #[derive(Debug, Default)]
-pub struct Loader {
+pub(crate) struct Loader {
     libs: HashMap<Pubkey, (String, Library)>,
 }
 
 impl Loader {
-    pub fn new() -> Self {
+    // Get an instance to a loader.
+    pub(crate) fn new() -> Self {
         Self {
             libs: HashMap::new(),
         }
     }
 
+    /// Adjust stubs for the natively loaded SBF avatars.
     /// NB: This function must be called after ProgramTest .start/start_context() method!
     /// Only after starting we have the appropriate SYSCALL_STUBS initialized.
-    pub fn adjust_stubs(&self) -> LiteCoverageError<()> {
+    pub(crate) fn adjust_stubs(&self) -> LiteCoverageError<()> {
         // So in ProgramTest's start() ...:
         // setup_bank() has passed and we have the appropriate stubs!
         // First to get them put there unimplemented stubs for a moment.
@@ -140,7 +145,8 @@ impl Loader {
         Ok(())
     }
 
-    pub fn add_program(
+    /// Load natively a SBF avatar.
+    pub(crate) fn add_program(
         &mut self,
         so_path: &str,
         program_name: &str,
@@ -156,7 +162,8 @@ impl Loader {
         Ok(())
     }
 
-    pub fn set_syscall_stubs_api(
+    /// Set stubs at the natively loaded SBF avatar.
+    pub(crate) fn set_syscall_stubs_api(
         &self,
         program_id: &Pubkey,
         stubs_api: SyscallStubsApi2,
@@ -180,6 +187,7 @@ impl Loader {
         Ok(())
     }
 
+    /// Obtain the entrypoint for this program_id.
     fn get_entrypoint(&self, program_id: &Pubkey) -> LiteCoverageError<ProgramEntrypoint> {
         let entrypoint: Symbol<ProgramEntrypoint> = unsafe {
             self.libs

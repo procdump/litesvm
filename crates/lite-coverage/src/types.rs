@@ -13,6 +13,7 @@ pub type Path = String;
 pub type NativeProgram = (Pubkey, ProgramName, Path);
 pub type AdditionalProgram = (Pubkey, ProgramName);
 
+/// ProgramTestContextHandle to reconcile sync with async in terms of RefCell borrows.
 pub struct ProgramTestContextHandle {
     ctx: Option<ProgramTestContext>,
     owner: Rc<RefCell<Option<ProgramTestContext>>>,

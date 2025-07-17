@@ -11,6 +11,7 @@ use solana_sysvar::slot_history::AccountInfo;
 
 declare_sol_loader_stubsv2!();
 
+/// Main logic behind the StubsManager is explained in loader::adjust_stubs.
 pub struct StubsManager;
 impl StubsManager {
     pub fn my_set_syscall_stubs(syscall_stubs: Box<dyn SyscallStubs>) -> Box<dyn SyscallStubs> {

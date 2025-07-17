@@ -17,6 +17,7 @@ use {
     tokio::runtime::Runtime,
 };
 
+/// Main object to look after code coverage.
 #[derive(Clone)]
 pub struct LiteCoverage {
     pub programs: Vec<NativeProgram>,
@@ -25,6 +26,7 @@ pub struct LiteCoverage {
 }
 
 impl LiteCoverage {
+    /// Get an instance to the main code coverage object.
     pub fn new(
         programs: Vec<NativeProgram>,
         additional_programs: Vec<AdditionalProgram>,
@@ -65,6 +67,7 @@ impl LiteCoverage {
         })
     }
 
+    /// Get a handle to the ProgramTestContext.
     pub fn get_program_test_context(&self) -> ProgramTestContextHandle {
         assert!(
             self.pt_context.borrow().is_some(),
@@ -73,6 +76,7 @@ impl LiteCoverage {
         ProgramTestContextHandle::new(Rc::clone(&self.pt_context))
     }
 
+    /// Add an account to the ProgramTestContext.
     pub fn add_account(&self, account_pubkey: &Pubkey, account_data: &AccountSharedData) {
         let mut pt_context = self.get_program_test_context();
         if let Some(ctx) = &mut *pt_context {
@@ -80,6 +84,7 @@ impl LiteCoverage {
         }
     }
 
+    /// Sign with our payer while also using our latest blockhash.
     async fn re_sign_tx(
         &self,
         tx: &VersionedTransaction,
@@ -101,6 +106,8 @@ impl LiteCoverage {
         Ok(VersionedTransaction::from(trans))
     }
 
+    /// Send the transaction to the natively loaded SBF avatars already prepared for
+    /// obtaining code coverage.
     pub fn send_transaction(
         &self,
         tx: VersionedTransaction,
@@ -130,6 +137,10 @@ impl LiteCoverage {
         Ok(())
     }
 
+    /// Log some events provided that some anchor envvars are globally set.
+    /// This is useful for anchor to know that it's litesvm that's actually used.
+    /// With this information anchor can go further visualizing the code coverage results
+    /// or bail out.
     fn log_anchor_test_event_artifacts(
         progs: Vec<NativeProgram>,
         additional_progs: Vec<AdditionalProgram>,
