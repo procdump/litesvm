@@ -674,29 +674,6 @@ impl LiteSVM {
         Ok(())
     }
 
-    // /// Adds an SBF program to the test environment from the file specified.
-    // pub fn add_coverage_program_from_file(
-    //     &mut self,
-    //     program_id: Pubkey,
-    //     program_path: impl AsRef<Path>,
-    //     lib_path: impl AsRef<Path>,
-    // ) -> Result<(), std::io::Error> {
-    //     let program_bytes = std::fs::read(program_path)?;
-    //     self
-    //     // maybe load here ?
-
-    //     match self.pt {
-    //         Some(_pt) => {
-    //             // TODO: Implement coverage program loading
-    //             Ok(())
-    //         }
-    //         None => Err(std::io::Error::new(
-    //             std::io::ErrorKind::Other,
-    //             "No program test set",
-    //         )),
-    //     }
-    // }
-
     /// Adds an SBF program to the test environment.
     pub fn add_program(&mut self, program_id: Pubkey, program_bytes: &[u8]) {
         let program_len = program_bytes.len();
@@ -942,7 +919,7 @@ impl LiteSVM {
             .collect::<Result<Vec<Vec<u16>>, TransactionError>>();
         match maybe_program_indices {
             Ok(program_indices) => {
-                let mut context = self.create_transaction_context(compute_budget, accounts.clone());
+                let mut context = self.create_transaction_context(compute_budget, accounts);
 
                 let tx_lite_coverage = || {
                     if self.lite_coverage.is_some() {
@@ -1246,6 +1223,7 @@ impl LiteSVM {
         })
     }
 
+    /// Attach programs for obtaining code coverage.
     pub fn with_coverage(
         &mut self,
         programs: Vec<NativeProgram>,
