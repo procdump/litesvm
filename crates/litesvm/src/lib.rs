@@ -673,7 +673,7 @@ impl LiteSVM {
         Ok(())
     }
 
-    /// Adds an SBF program to the test environment.
+    /// Adds am SBF program to the test environment.
     pub fn add_program(&mut self, program_id: Pubkey, program_bytes: &[u8]) {
         let program_len = program_bytes.len();
         let lamports = self.minimum_balance_for_rent_exemption(program_len);
