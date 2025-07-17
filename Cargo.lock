@@ -2458,6 +2458,7 @@ dependencies = [
  "jsonrpc-core",
  "lazy_static",
  "libloading",
+ "log",
  "serde",
  "solana-account",
  "solana-bpf-loader-program",
