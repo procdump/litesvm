@@ -36,7 +36,7 @@ impl LiteCoverage {
             use std::sync::Once;
             static SINGLETON: Once = Once::new();
 
-            if SINGLETON.is_completed() == false {
+            if !SINGLETON.is_completed() {
                 SINGLETON.call_once(|| {});
             } else {
                 return Err(Box::<dyn std::error::Error + Send + Sync>::from(

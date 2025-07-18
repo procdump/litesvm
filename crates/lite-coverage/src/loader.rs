@@ -152,9 +152,10 @@ impl Loader {
     }
 
     fn default_sbf_avatar_dirs() -> Vec<PathBuf> {
-        let mut search_path = vec![];
-        search_path.push(PathBuf::from("target/debug"));
-        search_path.push(PathBuf::from("tests/coverage_fixtures"));
+        let search_path = vec![
+            PathBuf::from("target/debug"),
+            PathBuf::from("tests/coverage_fixtures"),
+        ];
         log::info!(r#"SBF avatars .so|dylib search path: {:?}"#, search_path);
         search_path
     }
