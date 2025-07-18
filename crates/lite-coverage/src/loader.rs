@@ -11,6 +11,7 @@ use solana_program::{
 };
 use std::{
     collections::HashMap,
+    path::PathBuf,
     sync::{atomic::AtomicPtr, Mutex},
 };
 
@@ -115,6 +116,11 @@ pub(crate) struct Loader {
 }
 
 impl Loader {
+    #[cfg(target_os = "macos")]
+    pub(crate) const SBF_AVATAR_EXT: &str = "dylib";
+    #[cfg(target_os = "linux")]
+    pub(crate) const SBF_AVATAR_EXT: &str = "so";
+
     // Get an instance to a loader.
     pub(crate) fn new() -> Self {
         Self {
@@ -145,14 +151,46 @@ impl Loader {
         Ok(())
     }
 
+    fn default_sbf_avatar_dirs() -> Vec<PathBuf> {
+        let mut search_path = vec![];
+        search_path.push(PathBuf::from("target/debug"));
+        search_path.push(PathBuf::from("tests/coverage_fixtures"));
+        log::info!(r#"SBF avatars .so|dylib search path: {:?}"#, search_path);
+        search_path
+    }
+
+    fn find_sbf_avatar_file(program_name: &str) -> Option<String> {
+        for dir in Loader::default_sbf_avatar_dirs() {
+            let candidate = dir.join(format!("lib{program_name}.{}", Loader::SBF_AVATAR_EXT));
+            if candidate.exists() {
+                let sbf_avatar_path = candidate.to_string_lossy().to_string();
+                log::info!("SBF avatar found @ {}", sbf_avatar_path);
+                return Some(sbf_avatar_path);
+            }
+        }
+        None
+    }
+
     /// Load natively a SBF avatar.
     pub(crate) fn add_program(
         &mut self,
-        so_path: &str,
+        _so_path: &str,
         program_name: &str,
         program_id: &Pubkey,
     ) -> LiteCoverageError<()> {
-        let lib = unsafe { Library::new(so_path)? };
+        // Come up with the so_path of the SBF avatar based on the program_name.
+        // For example: target/debug/libcounter.dylib if program_name is 'counter'.
+        let sbf_avatar_path = Loader::find_sbf_avatar_file(program_name).ok_or(Box::<
+            dyn std::error::Error + Send + Sync,
+        >::from(
+            r#"
+LiteCoverage Loader: Can't find any SBF avatar for program '{program_name}'
+For example - looking for:
+'target/debug/libcounter.{so|dylib}' if program_name is 'counter' where
+the extension .so would be on Linux or .dylib would be on MacOS.
+"#,
+        ))?;
+        let lib = unsafe { Library::new(sbf_avatar_path)? };
         self.libs
             .insert(*program_id, (program_name.to_string(), lib));
 

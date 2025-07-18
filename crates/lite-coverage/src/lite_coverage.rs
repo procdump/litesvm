@@ -58,7 +58,7 @@ impl LiteCoverage {
         let mut loader = Loader::new();
         for (program_id, program_name, so_path) in static_programs.iter() {
             log::info!(
-                "Adding native program {} with program id: {}",
+                "Adding native program (SBF avatar) '{}' with program id: {}",
                 program_name,
                 program_id
             );
