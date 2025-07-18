@@ -180,16 +180,17 @@ impl Loader {
     ) -> LiteCoverageError<()> {
         // Come up with the so_path of the SBF avatar based on the program_name.
         // For example: target/debug/libcounter.dylib if program_name is 'counter'.
-        let sbf_avatar_path = Loader::find_sbf_avatar_file(program_name).ok_or(Box::<
-            dyn std::error::Error + Send + Sync,
-        >::from(
-            r#"
-LiteCoverage Loader: Can't find any SBF avatar for program '{program_name}'
-For example - looking for:
-'target/debug/libcounter.{so|dylib}' if program_name is 'counter' where
-the extension .so would be on Linux or .dylib would be on MacOS.
-"#,
-        ))?;
+        let sbf_avatar_path =
+            Loader::find_sbf_avatar_file(program_name).ok_or(Box::<
+                dyn std::error::Error + Send + Sync,
+            >::from(format!(
+                r#"LiteCoverage Loader: Can't find any SBF avatar for program '{program_name}'.
+For example - looking for 'target/debug/libcounter.so|dylib' or
+'tests/coverage_fixtures/libcounter.so|dylib' if program_name is 'counter' where
+the extension .so would be on Linux or .dylib would be on MacOS. Mind that
+symbolic links are also fine as with the case of using some programs built externally.
+"#
+            )))?;
         let lib = unsafe { Library::new(sbf_avatar_path)? };
         self.libs
             .insert(*program_id, (program_name.to_string(), lib));
