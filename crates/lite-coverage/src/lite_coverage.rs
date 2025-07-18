@@ -26,12 +26,25 @@ pub struct LiteCoverage {
 }
 
 impl LiteCoverage {
-    /// Get an instance to the main code coverage object.
+    /// Get a singleton instance to the main code coverage object.
     pub fn new(
         programs: Vec<NativeProgram>,
         additional_programs: Vec<AdditionalProgram>,
         payer: Keypair,
     ) -> LiteCoverageError<Self> {
+        {
+            use std::sync::Once;
+            static SINGLETON: Once = Once::new();
+
+            if SINGLETON.is_completed() == false {
+                SINGLETON.call_once(|| {});
+            } else {
+                return Err(Box::<dyn std::error::Error + Send + Sync>::from(
+                    "LiteCoverage is singleton, please use only one instance of LiteSVM",
+                ));
+            }
+        }
+
         let static_programs = Box::leak(Box::new(programs.clone()));
         let mut program_test = ProgramTest::default();
         program_test.prefer_bpf(false);
