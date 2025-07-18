@@ -9,8 +9,7 @@ use std::{
 
 pub type LiteCoverageError<T> = Result<T, Box<dyn Error + Send + Sync>>;
 pub type ProgramName = String;
-pub type Path = String;
-pub type NativeProgram = (Pubkey, ProgramName, Path);
+pub type NativeProgram = (Pubkey, ProgramName);
 pub type AdditionalProgram = (Pubkey, ProgramName);
 
 /// ProgramTestContextHandle to reconcile sync with async in terms of RefCell borrows.

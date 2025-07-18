@@ -299,12 +299,13 @@ export class LiteSVM {
   }
 
   /**
-   * TODO add some good description
-   * @param programId - The program ID.
-   * @param path - The path to the .so file.
+   * Adds a SBF avatar (i.e native program) necessary for generating code coverage.
+   * @param programs - an array of program names.
+   * @param additionalPrograms - an array of additional SBF programs to load.
+   * @param payer - payer for the transactions, should be the same as used with the LiteSVM object.
    */
   withCoverage(
-    programs: Array<[string, Uint8Array, string]>,
+    programs: Array<[string, Uint8Array]>,
     additionalPrograms: Array<[string, Uint8Array]>,
     payer: Uint8Array
   ) {

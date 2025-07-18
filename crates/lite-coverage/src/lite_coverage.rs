@@ -56,13 +56,13 @@ impl LiteCoverage {
         }
 
         let mut loader = Loader::new();
-        for (program_id, program_name, so_path) in static_programs.iter() {
+        for (program_id, program_name) in static_programs.iter() {
             log::info!(
                 "Adding native program (SBF avatar) '{}' with program id: {}",
                 program_name,
                 program_id
             );
-            loader.add_program(so_path, program_name, program_id)?;
+            loader.add_program(program_name, program_id)?;
             program_test.add_program(program_name, *program_id, processor!(entrypoint));
         }
         log::info!("Loaded: {:?}", loader);
@@ -169,8 +169,8 @@ impl LiteCoverage {
                         .write(true)
                         .open(format!("{}.{}.log", event_file, std::process::id()))?;
                     file.write_all("litesvm=true\n".as_bytes())?;
-                    for (pubkey, name, path) in &progs {
-                        file.write_all(format!("{}={},{}\n", name, pubkey, path).as_bytes())?;
+                    for (pubkey, name) in &progs {
+                        file.write_all(format!("{}={}\n", name, pubkey).as_bytes())?;
                     }
                     for (pubkey, name) in &additional_progs {
                         file.write_all(format!("{}={}\n", name, pubkey).as_bytes())?;

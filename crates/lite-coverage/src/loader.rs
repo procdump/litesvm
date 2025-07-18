@@ -174,7 +174,6 @@ impl Loader {
     /// Load natively a SBF avatar.
     pub(crate) fn add_program(
         &mut self,
-        _so_path: &str,
         program_name: &str,
         program_id: &Pubkey,
     ) -> LiteCoverageError<()> {

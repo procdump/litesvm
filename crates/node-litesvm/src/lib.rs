@@ -241,11 +241,11 @@ impl LiteSvm {
     /// provide code coverage.
     pub fn with_coverage(
         &mut self,
-        programs: Vec<(String, Uint8Array, String)>,
+        programs: Vec<(String, Uint8Array)>,
         additional_programs: Vec<(String, Uint8Array)>,
         payer: Uint8Array,
     ) -> Result<()> {
-        let mut progs: Vec<(Pubkey, String, String)> = vec![];
+        let mut progs: Vec<(Pubkey, String)> = vec![];
         for p in programs {
             progs.push((
                 Pubkey::new_from_array(
@@ -254,7 +254,6 @@ impl LiteSvm {
                     })?,
                 ),
                 p.0.clone(),
-                p.2.clone(),
             ));
         }
         let mut additional_progs: Vec<(Pubkey, String)> = vec![];
