@@ -23,6 +23,8 @@ pub struct LiteCoverage {
     pub programs: Vec<NativeProgram>,
     pub pt_context: Rc<RefCell<Option<ProgramTestContext>>>,
     rt: Arc<Runtime>,
+    #[allow(dead_code)]
+    loader: Rc<Loader>,
 }
 
 impl LiteCoverage {
@@ -77,6 +79,7 @@ impl LiteCoverage {
             pt_context: Rc::new(RefCell::new(Some(pt_context))),
             programs,
             rt: Arc::new(rt),
+            loader: Rc::new(loader),
         })
     }
 
