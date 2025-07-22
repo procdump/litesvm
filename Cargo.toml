@@ -62,7 +62,7 @@ solana-program-option = "2.2"
 solana-program-pack = "2.2"
 solana-program-runtime = ">=2.2,<=2.2.4"
 #solana-program-test = "2.2"
-solana-program-test = { git = "ssh://git@github.com/vlady-kotsev/program-test.git", branch = "cov" }
+solana-program-test = { git = "https://github.com/LimeChain/program-test.git" }
 solana-pubkey = "2.2"
 solana-rent = "2.2"
 solana-runtime-transaction = "2.2"
