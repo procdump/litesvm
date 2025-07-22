@@ -28,7 +28,9 @@ use {
     solana_clock::Clock as ClockOriginal,
     solana_epoch_rewards::EpochRewards as EpochRewardsOriginal,
     solana_epoch_schedule::EpochSchedule as EpochScheduleOriginal,
+    solana_keypair::Keypair,
     solana_last_restart_slot::LastRestartSlot,
+    solana_pubkey::Pubkey,
     solana_rent::Rent as RentOriginal,
     solana_signature::Signature,
     solana_slot_hashes::SlotHashes,
@@ -232,6 +234,54 @@ impl LiteSvm {
                     format!("Failed to add program: {e}"),
                 )
             })
+    }
+
+    #[napi]
+    /// Load native programs as well as additional SBF programs in order to
+    /// provide code coverage.
+    pub fn with_coverage(
+        &mut self,
+        programs: Vec<(String, Uint8Array)>,
+        additional_programs: Vec<(String, Uint8Array)>,
+        payer: Uint8Array,
+    ) -> Result<()> {
+        let mut progs: Vec<(Pubkey, String)> = vec![];
+        for p in programs {
+            progs.push((
+                Pubkey::new_from_array(
+                    p.1.to_vec().try_into().map_err(|_| {
+                        Error::new(Status::InvalidArg, "Program ID must be 32 bytes")
+                    })?,
+                ),
+                p.0.clone(),
+            ));
+        }
+        let mut additional_progs: Vec<(Pubkey, String)> = vec![];
+        for ap in additional_programs {
+            additional_progs.push((
+                Pubkey::new_from_array(
+                    ap.1.to_vec().try_into().map_err(|_| {
+                        Error::new(Status::InvalidArg, "Program ID must be 32 bytes")
+                    })?,
+                ),
+                ap.0.clone(),
+            ));
+        }
+
+        self.0
+            .with_coverage(
+                progs,
+                additional_progs,
+                Keypair::from_bytes(&payer)
+                    .map_err(|_| Error::new(Status::InvalidArg, "Invalid Payer Keypair bytes"))?,
+            )
+            .map_err(|e| {
+                Error::new(
+                    Status::GenericFailure,
+                    format!("Failed to set programs for coverage: {e}"),
+                )
+            })?;
+        Ok(())
     }
 
     #[napi]

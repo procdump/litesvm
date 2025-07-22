@@ -253,12 +253,15 @@ much easier.
 
 */
 
+use lite_coverage::AdditionalProgram;
+pub use lite_coverage::{LiteCoverage, LiteCoverageError, NativeProgram};
 #[cfg(feature = "nodejs-internal")]
 use qualifier_attr::qualifiers;
 #[allow(deprecated)]
-use solana_sysvar::recent_blockhashes::IterItem;
-#[allow(deprecated)]
-use solana_sysvar::{fees::Fees, recent_blockhashes::RecentBlockhashes};
+use solana_sysvar::{
+    fees::Fees, recent_blockhashes::IterItem, recent_blockhashes::RecentBlockhashes,
+};
+
 use {
     crate::{
         accounts_db::AccountsDb,
@@ -352,6 +355,7 @@ pub struct LiteSVM {
     blockhash_check: bool,
     fee_structure: FeeStructure,
     log_bytes_limit: Option<usize>,
+    lite_coverage: Option<LiteCoverage>,
 }
 
 impl Default for LiteSVM {
@@ -367,6 +371,7 @@ impl Default for LiteSVM {
             blockhash_check: false,
             fee_structure: FeeStructure::default(),
             log_bytes_limit: Some(10_000),
+            lite_coverage: None,
         }
     }
 }
@@ -915,6 +920,15 @@ impl LiteSVM {
         match maybe_program_indices {
             Ok(program_indices) => {
                 let mut context = self.create_transaction_context(compute_budget, accounts);
+
+                let tx_lite_coverage = || {
+                    if self.lite_coverage.is_some() {
+                        Some(tx.clone())
+                    } else {
+                        None
+                    }
+                };
+
                 let mut tx_result = process_message(
                     tx.message(),
                     &program_indices,
@@ -937,6 +951,10 @@ impl LiteSVM {
                 )
                 .map(|_| ());
 
+                if let Some(tx_copy) = tx_lite_coverage() {
+                    self.send_transaction_lite_coverage(tx_copy);
+                }
+
                 if let Err(err) = self.check_accounts_rent(tx, &context) {
                     tx_result = Err(err);
                 };
@@ -953,6 +971,73 @@ impl LiteSVM {
         }
     }
 
+    fn send_transaction_lite_coverage(&self, tx: SanitizedTransaction) {
+        if let Some(lite_coverage) = self.lite_coverage.as_ref() {
+            // Sync Sysvars
+            self.sync_sysvars_with_lite_coverage();
+            // Sync Accounts
+            let tx_accounts = self.collect_accounts_for_lite_coverage(&tx);
+
+            let _ = lite_coverage.send_transaction(tx.to_versioned_transaction(), &tx_accounts);
+        }
+    }
+
+    fn sync_sysvars_with_lite_coverage(&self) {
+        if let Some(lite_coverage) = self.lite_coverage.as_ref() {
+            let pt_context = lite_coverage.get_program_test_context();
+            if let Some(ctx) = &*pt_context {
+                let clock_sysvar = self.get_sysvar::<Clock>();
+                ctx.set_sysvar(&clock_sysvar);
+
+                let epoch_schedule_sysvar = self.get_sysvar::<EpochSchedule>();
+                ctx.set_sysvar(&epoch_schedule_sysvar);
+
+                #[allow(deprecated)]
+                let fees_sysvar = self.get_sysvar::<Fees>();
+                ctx.set_sysvar(&fees_sysvar);
+
+                let rent_sysvar = self.get_sysvar::<Rent>();
+                ctx.set_sysvar(&rent_sysvar);
+
+                let epoch_rewards_sysvar = self.get_sysvar::<EpochRewards>();
+                ctx.set_sysvar(&epoch_rewards_sysvar);
+
+                #[allow(deprecated)]
+                let recent_blockhashes_sysvar = self.get_sysvar::<RecentBlockhashes>();
+                ctx.set_sysvar(&recent_blockhashes_sysvar);
+
+                let slot_hashed_sysvar = self.get_sysvar::<SlotHashes>();
+                ctx.set_sysvar(&slot_hashed_sysvar);
+
+                let slot_history_sysvar = self.get_sysvar::<SlotHistory>();
+                ctx.set_sysvar(&slot_history_sysvar);
+
+                let stake_history_sysvar = self.get_sysvar::<StakeHistory>();
+                ctx.set_sysvar(&stake_history_sysvar);
+
+                let last_restart_slot_sysvar = self.get_sysvar::<LastRestartSlot>();
+                ctx.set_sysvar(&last_restart_slot_sysvar);
+            }
+        }
+    }
+
+    fn collect_accounts_for_lite_coverage(
+        &self,
+        tx: &SanitizedTransaction,
+    ) -> Vec<(Pubkey, AccountSharedData)> {
+        let account_keys = tx.message().static_account_keys();
+        let mut tx_accounts: Vec<(Pubkey, AccountSharedData)> =
+            Vec::with_capacity(account_keys.len());
+        for account_key in account_keys {
+            let account = self.get_account(account_key);
+            if let Some(account) = account {
+                if !account.executable() {
+                    tx_accounts.push((*account_key, account.into()));
+                }
+            }
+        }
+        tx_accounts
+    }
     fn check_accounts_rent(
         &self,
         tx: &SanitizedTransaction,
@@ -1136,6 +1221,17 @@ impl LiteSVM {
         map_sanitize_result(self.sanitize_transaction_no_verify(tx), |s_tx| {
             self.execute_sanitized_transaction_readonly(s_tx, log_collector)
         })
+    }
+
+    /// Attach programs for obtaining code coverage.
+    pub fn with_coverage(
+        &mut self,
+        programs: Vec<NativeProgram>,
+        additional_programs: Vec<AdditionalProgram>,
+        payer: Keypair,
+    ) -> LiteCoverageError<()> {
+        self.lite_coverage = Some(LiteCoverage::new(programs, additional_programs, payer)?);
+        Ok(())
     }
 
     /// Submits a signed transaction.

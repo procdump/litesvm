@@ -1,0 +1,32 @@
+[package]
+name = "lite-coverage"
+version = "0.1.0"
+edition = "2021"
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+libloading = "0.8.8"
+base64 = "0.22.1"
+bincode = { workspace = true }
+serde = { workspace = true }
+jsonrpc-core = "18.0.0"
+bs58 = { version = "0.5.1", default-features = false }
+borsh = "1.5.7"
+solana-program-test = { workspace = true }
+solana-account = { workspace = true }
+solana-bpf-loader-program.workspace = true
+solana-program = { workspace = true }
+solana-keypair = { workspace = true }
+solana-signer = { workspace = true }
+solana-transaction = { workspace = true }
+solana-instruction = { workspace = true }
+solana-pubkey = { workspace = true }
+solana-program-error = { workspace = true }
+solana-program-entrypoint = { workspace = true }
+solana-sysvar = { workspace = true }
+solana-sdk-ids = { workspace = true }
+tokio = { workspace = true }
+lazy_static = "1.5.0"
+solana-program-stubs = { workspace = true }
+log.workspace = true
