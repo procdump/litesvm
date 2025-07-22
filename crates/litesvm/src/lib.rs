@@ -274,6 +274,7 @@ use {
         },
         utils::{create_blockhash, rent::RentState},
     },
+    agave_reserved_account_keys::ReservedAccountKeys,
     itertools::Itertools,
     log::error,
     precompiles::load_precompiles,
@@ -306,7 +307,6 @@ use {
     },
     solana_pubkey::Pubkey,
     solana_rent::Rent,
-    solana_reserved_account_keys::ReservedAccountKeys,
     solana_sdk_ids::{bpf_loader, native_loader, system_program},
     solana_signature::Signature,
     solana_signer::Signer,
@@ -665,7 +665,7 @@ impl LiteSVM {
     /// Adds an SBF program to the test environment from the file specified.
     pub fn add_program_from_file(
         &mut self,
-        program_id: Pubkey,
+        program_id: impl Into<Pubkey>,
         path: impl AsRef<Path>,
     ) -> Result<(), std::io::Error> {
         let bytes = std::fs::read(path)?;
@@ -674,7 +674,8 @@ impl LiteSVM {
     }
 
     /// Adds am SBF program to the test environment.
-    pub fn add_program(&mut self, program_id: Pubkey, program_bytes: &[u8]) {
+    pub fn add_program(&mut self, program_id: impl Into<Pubkey>, program_bytes: &[u8]) {
+        let program_id = program_id.into();
         let program_len = program_bytes.len();
         let lamports = self.minimum_balance_for_rent_exemption(program_len);
         let mut account = AccountSharedData::new(lamports, program_len, &bpf_loader::id());
