@@ -5734,7 +5734,8 @@ dependencies = [
 [[package]]
 name = "solana-program-stubs"
 version = "0.1.0"
-source = "git+ssh://git@github.com/procdump/sol-stubs.git#16cc5e0b3f084330d27e5c2a4c4c352531667c35"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "92919225911e3dcfe67af6d012aa567ac812945db97b15141859bf4e28fa117c"
 dependencies = [
  "lazy_static",
 ]
