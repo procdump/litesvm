@@ -1,6 +1,6 @@
 use crate::{
     sbf,
-    stubs::{StubsManager, SyscallStubsApi2, UnimplementedSyscallStubs, WrapperSyscallStubs},
+    stubs::{StubsManager, SyscallStubsApi, UnimplementedSyscallStubs, WrapperSyscallStubs},
     types::LiteCoverageError,
 };
 use core::str;
@@ -16,7 +16,7 @@ use std::{
 };
 
 type ProgramEntrypoint = unsafe extern "C" fn(input: *mut u8) -> u64;
-type ProgramSetSyscallStubsApi = unsafe extern "C" fn(stubs_api: SyscallStubsApi2);
+type ProgramSetSyscallStubsApi = unsafe extern "C" fn(stubs_api: SyscallStubsApi);
 
 lazy_static::lazy_static! (
     pub static ref PROGRAMS_MAP: Mutex<HashMap<Pubkey, AtomicPtr<()>>> = Mutex::new(HashMap::new());
@@ -144,7 +144,7 @@ impl Loader {
         // Now for each program set the appropriate stubs
         for (program_id, _) in self.libs.iter() {
             // Now create the C interface so that the solana programs can reach our SYSCALL_STUBS!
-            let stubs_api = SyscallStubsApi2::new();
+            let stubs_api = SyscallStubsApi::new();
             // Pass it to the loaded smart contract!
             self.set_syscall_stubs_api(program_id, stubs_api)?;
         }
@@ -205,7 +205,7 @@ symbolic links are also fine as with the case of using some programs built exter
     pub(crate) fn set_syscall_stubs_api(
         &self,
         program_id: &Pubkey,
-        stubs_api: SyscallStubsApi2,
+        stubs_api: SyscallStubsApi,
     ) -> LiteCoverageError<()> {
         let res: Result<Symbol<ProgramSetSyscallStubsApi>, libloading::Error> = unsafe {
             self.libs

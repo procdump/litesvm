@@ -1,7 +1,7 @@
 use std::sync::{Arc, RwLock};
 
 use solana_program_error::ProgramResult;
-use solana_program_stubs::declare_sol_loader_stubsv2;
+use solana_program_stubs::declare_sol_loader_stubs;
 use solana_sysvar::program_stubs::SyscallStubs;
 
 use solana_instruction::Instruction;
@@ -9,7 +9,7 @@ use solana_program::instruction::AccountMeta;
 use solana_pubkey::Pubkey;
 use solana_sysvar::slot_history::AccountInfo;
 
-declare_sol_loader_stubsv2!();
+declare_sol_loader_stubs!();
 
 /// Main logic behind the StubsManager is explained in loader::adjust_stubs.
 pub struct StubsManager;
