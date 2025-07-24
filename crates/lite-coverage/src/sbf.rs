@@ -88,7 +88,7 @@ unsafe fn deserialize_instruction_data<'a>(input: *mut u8, mut offset: usize) ->
 #[allow(clippy::arithmetic_side_effects)]
 pub(crate) unsafe fn deserialize_updated_account_infos<'a>(
     new_input: *mut u8,
-    original_data_lens: &Vec<usize>,
+    original_data_lens: &[usize],
 ) -> (&'a Pubkey, Vec<AccountInfo<'a>>, &'a [u8]) {
     let mut offset: usize = 0;
 
@@ -101,6 +101,7 @@ pub(crate) unsafe fn deserialize_updated_account_infos<'a>(
     // Account Infos
 
     let mut accounts = Vec::with_capacity(num_accounts);
+    #[allow(clippy::needless_range_loop)]
     for i in 0..num_accounts {
         let dup_info = *(new_input.add(offset));
         offset += size_of::<u8>();
