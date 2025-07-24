@@ -41,28 +41,25 @@ pub fn entrypoint(program_id: &Pubkey, accounts: &[AccountInfo], _data: &[u8]) -
         .get_current_instruction_context()
         .map_err(|_| ProgramError::InvalidArgument)?;
 
-    let (mut parameter_bytes, _, _) =
+    let (mut parameter_bytes, _mem_region, serialized_account_meta_data) =
         solana_bpf_loader_program::serialization::serialize_parameters(
             transaction_context,
             instruction_context,
             true, // copy_account_data // There is no VM so direct mapping can not be implemented here
         )
         .map_err(|_| ProgramError::InvalidArgument)?;
+    let original_data_lens: Vec<_> = serialized_account_meta_data
+        .iter()
+        .map(|sam| sam.original_data_len)
+        .collect();
 
-    // Make a copy prior to calling the entrypoint fn, we'll use it
-    // for deserialization of the post-instruction updated input.
-    let mut parameter_bytes_copy = parameter_bytes.clone();
     let res = unsafe { entry(parameter_bytes.as_slice().as_ptr() as *mut _) };
     if res == 0 {
-        // Deserialize data back into instruction params advancing on the old input
-        // while using values from the new input. The reason for this is that
-        // some programs may repurpose and change the value of bytes in the old input which
-        // in the end may break the canonical deserialization.
-        // So try to to do our best to extract what we need while following the correct format.
+        // Deserialize data back into instruction params.
         let (_, updated_account_infos, _) = unsafe {
             sbf::deserialize_updated_account_infos(
-                &mut parameter_bytes_copy.as_slice_mut()[0] as *const u8,
                 &mut parameter_bytes.as_slice_mut()[0] as *mut u8,
+                &original_data_lens,
             )
         };
 

@@ -10,6 +10,7 @@ use solana_sysvar::slot_history::AccountInfo;
 unsafe fn deserialize_account_info<'a>(
     mut offset: usize,
     new_input: *mut u8,
+    original_data_len: usize,
 ) -> (AccountInfo<'a>, usize) {
     #[allow(clippy::cast_ptr_alignment)]
     let is_signer = *(new_input.add(offset) as *const u8) != 0;
@@ -23,7 +24,10 @@ unsafe fn deserialize_account_info<'a>(
     let executable = *(new_input.add(offset) as *const u8) != 0;
     offset += size_of::<u8>();
 
-    // padding
+    // padding or original_data_len
+    let _original_data_len_from_new_input = *(new_input.add(offset) as *const u32);
+    // TODO: Put this assert? Does pinocchio update the padding to the original data len?
+    // assert!(original_data_len == _original_data_len_from_new_input as usize);
     offset += size_of::<u32>();
 
     let key: &Pubkey = &*(new_input.add(offset) as *const Pubkey);
@@ -45,7 +49,8 @@ unsafe fn deserialize_account_info<'a>(
     let data = std::rc::Rc::new(std::cell::RefCell::new({
         std::slice::from_raw_parts_mut(new_input.add(offset), data_len)
     }));
-    offset += data_len + MAX_PERMITTED_DATA_INCREASE;
+    // use original_data_len when advancing as done at deserialize_parameters_aligned
+    offset += original_data_len + MAX_PERMITTED_DATA_INCREASE;
     offset += (offset as *const u8).align_offset(BPF_ALIGN_OF_U128); // padding
 
     #[allow(clippy::cast_ptr_alignment)]
@@ -82,25 +87,27 @@ unsafe fn deserialize_instruction_data<'a>(input: *mut u8, mut offset: usize) ->
 
 #[allow(clippy::arithmetic_side_effects)]
 pub(crate) unsafe fn deserialize_updated_account_infos<'a>(
-    old_input: *const u8,
     new_input: *mut u8,
+    original_data_lens: &Vec<usize>,
 ) -> (&'a Pubkey, Vec<AccountInfo<'a>>, &'a [u8]) {
     let mut offset: usize = 0;
 
     // Number of accounts present
 
     #[allow(clippy::cast_ptr_alignment)]
-    let num_accounts = *(old_input.add(offset) as *const u64) as usize;
+    let num_accounts = *(new_input.add(offset) as *const u64) as usize;
     offset += size_of::<u64>();
 
     // Account Infos
 
     let mut accounts = Vec::with_capacity(num_accounts);
-    for _ in 0..num_accounts {
-        let dup_info = *(old_input.add(offset));
+    for i in 0..num_accounts {
+        let dup_info = *(new_input.add(offset));
         offset += size_of::<u8>();
         if dup_info == NON_DUP_MARKER {
-            let (account_info, new_offset) = deserialize_account_info(offset, new_input);
+            let original_data_len = original_data_lens[i];
+            let (account_info, new_offset) =
+                deserialize_account_info(offset, new_input, original_data_len);
             offset = new_offset;
             accounts.push(account_info);
         } else {
