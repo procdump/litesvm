@@ -271,6 +271,7 @@ use {
         },
         utils::{create_blockhash, rent::RentState},
     },
+    agave_feature_set::FeatureSet,
     agave_reserved_account_keys::ReservedAccountKeys,
     itertools::Itertools,
     log::error,
@@ -287,7 +288,6 @@ use {
     solana_compute_budget_instruction::instructions_processor::process_compute_budget_instructions,
     solana_epoch_rewards::EpochRewards,
     solana_epoch_schedule::EpochSchedule,
-    solana_feature_set::FeatureSet,
     solana_fee_structure::FeeStructure,
     solana_hash::Hash,
     solana_keypair::Keypair,
@@ -763,7 +763,22 @@ impl LiteSVM {
         let tx = self.sanitize_transaction_no_verify_inner(tx)?;
 
         tx.verify()?;
-        tx.verify_precompiles(&self.feature_set)?;
+        for (index, (program_id, instruction)) in
+            tx.message().program_instructions_iter().enumerate()
+        {
+            agave_precompiles::verify_if_precompile(
+                program_id,
+                instruction,
+                tx.message().instructions(),
+                &self.feature_set,
+            )
+            .map_err(|err| {
+                TransactionError::InstructionError(
+                    index as u8,
+                    solana_instruction::error::InstructionError::Custom(err as u32),
+                )
+            })?;
+        }
 
         Ok(tx)
     }

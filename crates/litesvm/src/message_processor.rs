@@ -1,10 +1,10 @@
 // copied from agave commit 8340ee60dd0184b17cfd319ea504079dfa636b62
 // with some execute_timings usage removed
 use {
+    agave_precompiles::get_precompile,
     solana_account::WritableAccount,
     solana_instructions_sysvar as instructions,
     solana_measure::measure_us,
-    solana_precompiles::get_precompile,
     solana_program_runtime::invoke_context::InvokeContext,
     solana_svm_transaction::svm_message::SVMMessage,
     solana_timings::ExecuteTimings,
