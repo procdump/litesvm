@@ -2482,6 +2482,36 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cd945864f07fe9f5371a27ad7b52a172b4b499999f1d97574c9fa68373937e12"
 
 [[package]]
+name = "lite-coverage"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "bincode",
+ "borsh 1.5.7",
+ "bs58",
+ "jsonrpc-core",
+ "lazy_static",
+ "libloading",
+ "log",
+ "serde",
+ "solana-account",
+ "solana-bpf-loader-program",
+ "solana-instruction",
+ "solana-keypair",
+ "solana-program",
+ "solana-program-entrypoint",
+ "solana-program-error",
+ "solana-program-stubs",
+ "solana-program-test",
+ "solana-pubkey",
+ "solana-sdk-ids",
+ "solana-signer",
+ "solana-sysvar",
+ "solana-transaction",
+ "tokio",
+]
+
+[[package]]
 name = "litemap"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2501,6 +2531,7 @@ dependencies = [
  "indexmap",
  "itertools 0.14.0",
  "libsecp256k1",
+ "lite-coverage",
  "log",
  "qualifier_attr",
  "serde",
@@ -2531,6 +2562,7 @@ dependencies = [
  "solana-native-token",
  "solana-nonce",
  "solana-nonce-account",
+ "solana-program-entrypoint",
  "solana-program-error",
  "solana-program-option",
  "solana-program-pack",
@@ -2598,6 +2630,7 @@ dependencies = [
  "solana-epoch-schedule",
  "solana-hash",
  "solana-instruction",
+ "solana-keypair",
  "solana-last-restart-slot",
  "solana-message",
  "solana-pubkey",
@@ -5753,10 +5786,18 @@ dependencies = [
 ]
 
 [[package]]
-name = "solana-program-test"
-version = "2.2.20"
+name = "solana-program-stubs"
+version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f9935e45c99e50d0e80c980b50a1c6a5c716b9dbc1d91d2f3f1d98f74c04a8a"
+checksum = "92919225911e3dcfe67af6d012aa567ac812945db97b15141859bf4e28fa117c"
+dependencies = [
+ "lazy_static",
+]
+
+[[package]]
+name = "solana-program-test"
+version = "2.2.4"
+source = "git+https://github.com/LimeChain/program-test.git#674912ed8959fda0b703dfd406b31a81767e9a76"
 dependencies = [
  "agave-feature-set",
  "assert_matches",

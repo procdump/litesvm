@@ -49,6 +49,7 @@ solana-nonce.workspace = true
 solana-nonce-account.workspace = true
 agave-precompiles.workspace = true
 solana-program-error.workspace = true
+solana-program-entrypoint.workspace = true
 solana-program-runtime.workspace = true
 solana-pubkey.workspace = true
 solana-rent.workspace = true
@@ -70,6 +71,9 @@ solana-transaction-context.workspace = true
 solana-transaction-error.workspace = true
 solana-vote-program.workspace = true
 thiserror.workspace = true
+lite-coverage = { workspace = true }
+solana-program-test.workspace = true
+tokio.workspace = true
 
 [dev-dependencies]
 criterion.workspace = true
