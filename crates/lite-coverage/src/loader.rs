@@ -46,6 +46,7 @@ pub fn entrypoint(program_id: &Pubkey, accounts: &[AccountInfo], _data: &[u8]) -
             transaction_context,
             instruction_context,
             true, // copy_account_data // There is no VM so direct mapping can not be implemented here
+            false,
         )
         .map_err(|_| ProgramError::InvalidArgument)?;
     let original_data_lens: Vec<_> = serialized_account_meta_data
