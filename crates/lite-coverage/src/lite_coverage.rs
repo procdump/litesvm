@@ -11,7 +11,6 @@ use {
     solana_account::AccountSharedData,
     solana_program::pubkey::Pubkey,
     solana_program_test::{processor, ProgramTest, ProgramTestContext},
-    solana_signer::Signer,
     solana_transaction::versioned::VersionedTransaction,
     std::{cell::RefCell, sync::Arc},
     tokio::runtime::Runtime,
@@ -100,26 +99,22 @@ impl LiteCoverage {
         }
     }
 
-    /// Sign with our payer while also using our latest blockhash.
-    async fn re_sign_tx(
+    /// Register the transaction's recent blockhash into ProgramTestContext.
+    /// This avoids the need to pre-sign with payer.
+    async fn register_recent_blockhash_from_transaction(
         &self,
         tx: &VersionedTransaction,
-    ) -> LiteCoverageError<VersionedTransaction> {
-        // TODO tx must be resigned for all signers
+    ) -> LiteCoverageError<()> {
         let pt_context = self.get_program_test_context();
         let ctx = pt_context
             .as_ref()
             .ok_or(Box::<dyn std::error::Error + Send + Sync>::from(
                 "Missing ProgramTestContext",
             ))?;
-        let payer = ctx.payer.insecure_clone();
-        let recent_blockhash = ctx.banks_client.get_latest_blockhash().await?;
 
-        let mut trans = tx.clone().into_legacy_transaction().unwrap();
-        trans.message.recent_blockhash = recent_blockhash;
-        trans.message.account_keys[0] = payer.pubkey();
-        trans.sign(&[&payer], recent_blockhash);
-        Ok(VersionedTransaction::from(trans))
+        let trans = tx.clone().into_legacy_transaction().unwrap();
+        ctx.register_recent_blockhash(&trans.message.recent_blockhash, None);
+        Ok(())
     }
 
     /// Send the transaction to the natively loaded SBF avatars already prepared for
@@ -133,7 +128,7 @@ impl LiteCoverage {
             for (account_pubkey, account_data) in accounts {
                 self.add_account(account_pubkey, account_data);
             }
-            let re_signed_tx = self.re_sign_tx(&tx).await?;
+            self.register_recent_blockhash_from_transaction(&tx).await?;
 
             let pt_context = self.get_program_test_context();
             let ctx =
@@ -144,7 +139,7 @@ impl LiteCoverage {
                     ))?;
             let res = ctx
                 .banks_client
-                .process_transaction_with_metadata(re_signed_tx)
+                .process_transaction_with_metadata(tx)
                 .await?;
 
             log::info!("LiteCoverage transaction result: {:#?}", res);

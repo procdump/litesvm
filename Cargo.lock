@@ -5743,7 +5743,7 @@ dependencies = [
 [[package]]
 name = "solana-program-test"
 version = "2.2.4"
-source = "git+https://github.com/LimeChain/program-test.git#674912ed8959fda0b703dfd406b31a81767e9a76"
+source = "git+https://github.com/LimeChain/program-test.git#7186116f37576557960adabd3fb5b491650a0b01"
 dependencies = [
  "assert_matches",
  "async-trait",
@@ -6098,6 +6098,7 @@ dependencies = [
  "solana-svm",
  "solana-svm-rent-collector",
  "solana-svm-transaction",
+ "solana-system-program",
  "solana-timings",
  "solana-transaction-status-client-types",
  "solana-unified-scheduler-logic",
@@ -6568,6 +6569,7 @@ dependencies = [
  "itertools 0.12.1",
  "log",
  "percentage",
+ "qualifier_attr",
  "serde",
  "serde_derive",
  "solana-account",
