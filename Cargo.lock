@@ -5797,7 +5797,7 @@ dependencies = [
 [[package]]
 name = "solana-program-test"
 version = "2.2.20"
-source = "git+https://github.com/procdump/solana-program-test.git#32cf79d33f0978c23ca6ba4f8a8807e945efd12a"
+source = "git+https://github.com/procdump/solana-program-test.git#ba70b14f19851cc724e80c89c012cc286fa1ce2f"
 dependencies = [
  "agave-feature-set",
  "assert_matches",
