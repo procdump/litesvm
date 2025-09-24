@@ -96,6 +96,8 @@ solana-vote-interface = { workspace = true, features = ["bincode"] }
 spl-associated-token-account-interface.workspace = true
 spl-token-interface.workspace = true
 test-log.workspace = true
+sha2.workspace = true
+hex.workspace = true
 
 [lints]
 workspace = true
