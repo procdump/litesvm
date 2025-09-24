@@ -440,7 +440,7 @@ impl LiteSVM {
         self
     }
 
-    /// Provide a default instruction tracing handler that writes registers and instructions
+    /// Provides a default instruction tracing handler that writes registers and instructions
     /// in the `SBF_TRACE_DIR` provided directory if it's set.
     pub fn get_default_instruction_tracing_handler() -> Arc<InstructionTracingHandler> {
         let handler = Arc::new(
