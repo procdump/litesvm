@@ -6,6 +6,10 @@ include = ["/src", "build.rs"]
 repository = "https://github.com/LiteSVM/litesvm"
 license = "MIT"
 
+[features]
+sbpf-debugger = ["solana-bpf-loader-program/sbpf-debugger"]
+sbpf-interpreter-mode = ["solana-bpf-loader-program/sbpf-interpreter-mode"]
+
 [lib]
 crate-type = ["cdylib"]
 
@@ -36,6 +40,7 @@ solana-sysvar = { workspace = true }
 solana-transaction = { workspace = true }
 solana-transaction-context = { workspace = true }
 solana-transaction-error = { workspace = true }
+solana-bpf-loader-program = { workspace = true }
 
 [build-dependencies]
 napi-build = "2.2.3"
