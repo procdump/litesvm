@@ -7,9 +7,9 @@ repository = "https://github.com/LiteSVM/litesvm"
 license = "MIT"
 
 [features]
-sbpf-debugger = ["solana-bpf-loader-program/sbpf-debugger"]
-sbpf-debugger-jit = ["solana-bpf-loader-program/sbpf-debugger-jit"]
-sbpf-interpreter-mode = ["solana-bpf-loader-program/sbpf-interpreter-mode"]
+#sbpf-debugger = ["solana-bpf-loader-program/sbpf-debugger"]
+#sbpf-debugger-jit = ["solana-bpf-loader-program/sbpf-debugger-jit"]
+#sbpf-interpreter-mode = ["solana-bpf-loader-program/sbpf-interpreter-mode"]
 
 [lib]
 crate-type = ["cdylib"]
