@@ -3342,7 +3342,7 @@ checksum = "dcf09694a0fc14e5ffb18f9b7b7c0f15ecb6eac5b5610bf76a1853459d19daf9"
 [[package]]
 name = "solana-sbpf"
 version = "0.12.2"
-source = "git+https://github.com/procdump/sbpf.git?branch=v0.12.2_feat_dbg_prs_arch#4c7380862cc7d815316ca32482ac54abc5fe5a5a"
+source = "git+https://github.com/procdump/sbpf.git?branch=v0.12.2_feat_dbg_prs_arch#216a52ba97315236a8f4d99a52c38b39eca9b493"
 dependencies = [
  "byteorder",
  "combine",
