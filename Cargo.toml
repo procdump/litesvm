@@ -21,20 +21,20 @@ bv = "0.11.1"
 criterion = "0.7"
 ed25519-dalek = "1.0.1"
 hashbrown = "0.16.0"
-indexmap = "2.6"
+indexmap = "2.12"
 itertools = "0.14"
 libsecp256k1 = "0.7.2"
 litesvm = { path = "crates/litesvm", version = "0.8" }
 log = "0.4"
-napi = { version = "3.2.4", default-features = false }
+napi = { version = "3.5.2", default-features = false }
 napi-build = "2.3.1"
-napi-derive = "3.2.4"
+napi-derive = "3.3.3"
 qualifier_attr = "0.2.2"
 serde = "1.0"
 smallvec = "1.13"
-solana-account = "3.0"
-solana-address-lookup-table-interface = "3.0"
-solana-bpf-loader-program = "3.0"
+solana-account = "~3.2"
+solana-address-lookup-table-interface = "~3.0"
+solana-bpf-loader-program = "~3.1"
 solana-builtins = "~3.1"
 solana-clock = "~3.0"
 solana-compute-budget = "~3.1"
@@ -46,14 +46,14 @@ solana-epoch-rewards = "~3.0"
 solana-epoch-schedule = "~3.0"
 solana-fee = "~3.1"
 solana-fee-structure = "~3.0"
-solana-hash = "3.0"
+solana-hash = "~3.1"
 solana-instruction = "~3.1"
 solana-instructions-sysvar = "~3.0"
 solana-keypair = "~3.1"
 solana-last-restart-slot = "~3.0"
 solana-loader-v3-interface = "6.1"
 solana-loader-v4-interface = "3.0"
-solana-message = "3.0"
+solana-message = "~3.0"
 solana-native-token = "~3.0"
 solana-nonce = "~3.0"
 solana-nonce-account = "~3.0"
@@ -107,15 +107,3 @@ codegen-units = 1
 
 [workspace.lints.clippy]
 result_large_err = "allow"
-
-# [patch.crates-io]
-# solana-svm-transaction = { git = "https://github.com/procdump/agave.git", branch = "v3.0.7-feat-dbg-prs" }
-# solana-svm-callback = { git = "https://github.com/procdump/agave.git", branch = "v3.0.7-feat-dbg-prs" }
-# solana-svm-feature-set = { git = "https://github.com/procdump/agave.git", branch = "v3.0.7-feat-dbg-prs" }
-# solana-svm-timings = { git = "https://github.com/procdump/agave.git", branch = "v3.0.7-feat-dbg-prs" }
-# solana-svm-log-collector = { git = "https://github.com/procdump/agave.git", branch = "v3.0.7-feat-dbg-prs" }
-# solana-svm-measure = { git = "https://github.com/procdump/agave.git", branch = "v3.0.7-feat-dbg-prs" }
-# solana-transaction-context = { git = "https://github.com/procdump/agave.git", branch = "v3.0.7-feat-dbg-prs" }
-# solana-program-runtime = { git = "https://github.com/procdump/agave.git", branch = "v3.0.7-feat-dbg-prs" }
-# solana-bpf-loader-program = { git = "https://github.com/procdump/agave.git", branch = "v3.0.7-feat-dbg-prs" }
-# solana-sbpf = { git = "https://github.com/procdump/sbpf.git", branch = "v0.12.2_feat_dbg_prs" }
