@@ -183,6 +183,7 @@ fn test_register_tracing_handler() {
 
     let mut svm = LiteSVM::new_debuggable(enable_register_tracing);
 
+    #[derive(Debug)]
     struct TracingData {
         program_id: Pubkey,
         executed_jump_instructions_count: usize,
@@ -230,7 +231,7 @@ fn test_register_tracing_handler() {
             Ok(())
         }
     }
-
+    
     impl InvocationInspectCallback for CustomRegisterTracingCallback {
         fn before_invocation(
             &self,
@@ -313,7 +314,7 @@ fn test_register_tracing_handler() {
 
         // Store this value for a later comparison.
         executed_jump_instruction_count_from_phase1 =
-            collected_data.executed_jump_instructions_count;
+        collected_data.executed_jump_instructions_count;
     }
 
     // Phase 2 - check that register tracing is disabled when constructing

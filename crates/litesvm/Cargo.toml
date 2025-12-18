@@ -9,6 +9,7 @@ repository.workspace = true
 readme = "../../README.md"
 
 [features]
+# default = ["register-tracing"]
 internal-test = []
 invocation-inspect-callback = []
 nodejs-internal = ["dep:qualifier_attr"]
