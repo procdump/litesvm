@@ -94,7 +94,6 @@ impl ExecutionResult {
 }
 
 /// The signature of the instruction tracing handler if user wants to implement its own.
-pub type InstructionTracingHandler = dyn Fn(
-    &Vec<Vec<[u64; 12]>>,
-    &Vec<Vec<u64>>,
-) -> std::result::Result<(), Box<dyn std::error::Error>>;
+pub type InstructionTracingHandler = dyn Fn(&Vec<Vec<[u64; 12]>>, &Vec<Vec<u64>>) -> std::result::Result<(), Box<dyn std::error::Error>>
+    + Send
+    + Sync;
