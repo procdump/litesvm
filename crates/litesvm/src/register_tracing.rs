@@ -112,6 +112,6 @@ pub(crate) fn as_bytes<T>(slice: &[T]) -> &[u8] {
     unsafe { std::slice::from_raw_parts(slice.as_ptr() as *const u8, std::mem::size_of_val(slice)) }
 }
 
-fn compute_hash(slice: &[u8]) -> String {
+pub(crate) fn compute_hash(slice: &[u8]) -> String {
     hex::encode(Sha256::digest(slice).as_slice())
 }

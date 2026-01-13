@@ -281,6 +281,8 @@ much easier.
 
 */
 
+#[cfg(feature = "debugger")]
+use crate::debugger::DefaultDebuggerCallback;
 #[cfg(feature = "register-tracing")]
 use crate::register_tracing::DefaultRegisterTracingCallback;
 #[cfg(feature = "precompiles")]
@@ -372,6 +374,8 @@ pub mod types;
 
 mod accounts_db;
 mod callback;
+#[cfg(feature = "debugger")]
+pub mod debugger;
 mod format_logs;
 mod history;
 mod message_processor;
@@ -446,6 +450,10 @@ impl LiteSVM {
         #[cfg(feature = "register-tracing")]
         if svm.enable_register_tracing {
             svm.invocation_inspect_callback = Arc::new(DefaultRegisterTracingCallback::default());
+        }
+        #[cfg(feature = "debugger")]
+        {
+            svm.invocation_inspect_callback = Arc::new(DefaultDebuggerCallback::default());
         }
 
         svm
