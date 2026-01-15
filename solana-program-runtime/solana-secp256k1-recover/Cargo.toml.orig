@@ -1,0 +1,45 @@
+[package]
+name = "solana-secp256k1-recover"
+description = "Solana SECP256K1 Recover"
+documentation = "https://docs.rs/solana-secp256k1-recover"
+version = "3.1.0"
+authors = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+edition = { workspace = true }
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[features]
+borsh = ["dep:borsh"]
+frozen-abi = ["dep:solana-frozen-abi", "dep:solana-frozen-abi-macro"]
+
+[dependencies]
+borsh = { workspace = true, optional = true }
+solana-frozen-abi = { workspace = true, optional = true, features = [
+    "frozen-abi",
+] }
+solana-frozen-abi-macro = { workspace = true, optional = true, features = [
+    "frozen-abi",
+] }
+thiserror = { workspace = true }
+
+[target.'cfg(any(target_os = "solana", target_arch = "bpf"))'.dependencies]
+solana-define-syscall = { workspace = true }
+
+[target.'cfg(not(any(target_os = "solana", target_arch = "bpf")))'.dependencies]
+k256 = { workspace = true }
+
+[dev-dependencies]
+anyhow = { workspace = true }
+borsh = { workspace = true }
+rand = { workspace = true }
+solana-program = { path = "../program" }
+
+[target.'cfg(not(target_os = "solana"))'.dev-dependencies]
+k256 = { workspace = true, features = ["ecdsa-core"] }
+
+[lints]
+workspace = true

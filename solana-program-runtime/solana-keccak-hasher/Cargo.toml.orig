@@ -1,0 +1,30 @@
+[package]
+name = "solana-keccak-hasher"
+description = "Solana Keccak hashing"
+documentation = "https://docs.rs/solana-keccak-hasher"
+version = "3.1.0"
+authors = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+edition = { workspace = true }
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+all-features = true
+rustdoc-args = ["--cfg=docsrs"]
+
+[features]
+sha3 = ["dep:sha3"]
+
+[dependencies]
+solana-hash = { workspace = true, features = ["decode"] }
+
+[target.'cfg(any(target_os = "solana", target_arch = "bpf"))'.dependencies]
+solana-define-syscall = { workspace = true }
+
+[target.'cfg(not(any(target_os = "solana", target_arch = "bpf")))'.dependencies]
+sha3 = { workspace = true, optional = true }
+
+[lints]
+workspace = true

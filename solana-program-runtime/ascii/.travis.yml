@@ -1,0 +1,37 @@
+sudo: false
+language: rust
+
+rust:
+  - nightly
+  - beta
+  - stable
+  - 1.9.0
+
+before_script:
+  - |
+    pip install 'travis-cargo<0.2' --user &&
+    export PATH=$HOME/.local/bin:$PATH
+
+script:
+  - |
+    travis-cargo test -- --no-default-features &&
+    travis-cargo test &&
+    travis-cargo test -- --all-features &&
+    rm Cargo.lock &&
+    # no version of quickcheck compiles with -Z minimal-versions, but serde does
+    travis-cargo --only nightly build -- -Z minimal-versions --features 'serde serde-test'
+
+after_success:
+  - |
+    if [ "$TRAVIS_RUST_VERSION" == "stable" ]; then
+        travis-cargo doc -- --no-default-features &&
+        mv target/doc target/doc_core &&
+        travis-cargo doc &&
+        mv target/doc_core target/doc/core &&
+        travis-cargo doc-upload
+    fi
+
+env:
+  global:
+    - TRAVIS_CARGO_NIGHTLY_FEATURE="" # no unstable feature
+    - secure: ddcWXicVcCooC+Dy8guGruZY2bAU3oyGjrxdC3YNfBYdatEKzW1toAiQyN8SRyZyfoHsbb7lh4YeBfv1rpmTPM6nvHMz9CHMlvED8Y+/QuYoKN2qrNiQ7eQ9xSVhOVlha/GMPSZXxmEIuJVj0Dn1D/S4RWyNMKCJdj2YvybPzOU=

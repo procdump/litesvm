@@ -1,0 +1,89 @@
+[package]
+name = "solana-address"
+description = "Solana account addresses"
+documentation = "https://docs.rs/solana-address"
+version = "2.0.0"
+rust-version = "1.81.0"
+authors = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+edition = { workspace = true }
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+all-features = true
+rustdoc-args = ["--cfg=docsrs"]
+
+[features]
+atomic = ["dep:solana-atomic-u64"]
+borsh = ["dep:borsh", "alloc"]
+bytemuck = ["copy", "dep:bytemuck", "dep:bytemuck_derive"]
+copy = []
+curve25519 = ["dep:curve25519-dalek", "sha2", "syscalls"]
+decode = ["dep:five8", "dep:five8_const", "error"]
+dev-context-only-utils = ["dep:arbitrary", "rand"]
+error = ["dep:solana-program-error"]
+frozen-abi = [
+    "dep:solana-frozen-abi",
+    "dep:solana-frozen-abi-macro",
+    "dep:solana-program-error",
+    "std",
+]
+rand = ["dep:rand", "atomic", "std"]
+sanitize = ["dep:solana-sanitize"]
+serde = ["dep:serde", "dep:serde_derive"]
+sha2 = ["dep:solana-sha256-hasher", "error"]
+std = ["decode", "borsh?/std", "serde?/std", "alloc"]
+alloc = []
+syscalls = ["dep:solana-define-syscall", "error"]
+
+[dependencies]
+arbitrary = { workspace = true, features = ["derive"], optional = true }
+borsh = { workspace = true, optional = true }
+bytemuck = { workspace = true, optional = true }
+bytemuck_derive = { workspace = true, optional = true }
+five8 = { workspace = true, optional = true }
+five8_const = { workspace = true, optional = true }
+rand = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
+serde_derive = { workspace = true, optional = true }
+solana-atomic-u64 = { workspace = true, optional = true }
+solana-frozen-abi = { workspace = true, features = ["frozen-abi"], optional = true }
+solana-frozen-abi-macro = { workspace = true, features = ["frozen-abi"], optional = true }
+solana-program-error = { workspace = true, optional = true }
+solana-sanitize = { workspace = true, optional = true }
+
+[target.'cfg(any(target_os = "solana", target_arch = "bpf"))'.dependencies]
+solana-define-syscall = { workspace = true, optional = true }
+solana-sha256-hasher = { workspace = true, optional = true }
+
+[target.'cfg(not(any(target_os = "solana", target_arch = "bpf")))'.dependencies]
+curve25519-dalek = { workspace = true, optional = true }
+solana-sha256-hasher = { workspace = true, features = ["sha2"], optional = true }
+
+[dev-dependencies]
+anyhow = { workspace = true }
+solana-account-info = { path = "../account-info" }
+solana-address = { path = ".", features = [
+    "atomic",
+    "borsh",
+    "curve25519",
+    "decode",
+    "dev-context-only-utils",
+    "error",
+    "sanitize",
+    "std",
+    "syscalls",
+] }
+solana-cpi = { path = "../cpi" }
+solana-example-mocks = { path = "../example-mocks" }
+solana-hash = { workspace = true }
+solana-instruction = { path = "../instruction", features = ["borsh"] }
+solana-program-error = { workspace = true, features = ["borsh"] }
+solana-system-interface = { path = "../system-interface", features = ["bincode"] }
+strum = { workspace = true }
+strum_macros = { workspace = true }
+
+[lints]
+workspace = true

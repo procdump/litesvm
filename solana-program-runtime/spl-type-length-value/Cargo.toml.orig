@@ -1,0 +1,31 @@
+[package]
+name = "spl-type-length-value"
+version = "0.9.0"
+description = "Solana Program Library Type-Length-Value Management"
+authors = ["Anza Maintainers <maintainers@anza.xyz>"]
+repository = "https://github.com/solana-program/libraries"
+license = "Apache-2.0"
+edition = "2021"
+exclude = ["js/**"]
+
+[features]
+derive = ["dep:spl-type-length-value-derive", "solana-program-error/borsh"]
+
+[dependencies]
+bytemuck = { version = "1.23.2", features = ["derive"] }
+num-derive = "0.4"
+num_enum = "0.7"
+num-traits = "0.2"
+solana-account-info = "3.0.0"
+solana-msg = "3.0.0"
+solana-program-error = "3.0.0"
+spl-discriminator = { version = "0.5.1", path = "../discriminator" }
+spl-type-length-value-derive = { version = "0.2", path = "./derive", optional = true }
+spl-pod = { version = "0.7.1", path = "../pod" }
+thiserror = "2.0"
+
+[lib]
+crate-type = ["lib"]
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]

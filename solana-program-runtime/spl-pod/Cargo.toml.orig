@@ -1,0 +1,36 @@
+[package]
+name = "spl-pod"
+version = "0.7.1"
+description = "Solana Program Library Plain Old Data (Pod)"
+authors = ["Anza Maintainers <maintainers@anza.xyz>"]
+repository = "https://github.com/solana-program/libraries"
+license = "Apache-2.0"
+edition = "2021"
+
+[features]
+serde-traits = ["dep:serde"]
+borsh = ["dep:borsh", "solana-pubkey/borsh"]
+
+[dependencies]
+borsh = { version = "1.5.7", features = ["derive", "unstable__schema"], optional = true }
+bytemuck = { version = "1.23.2" }
+bytemuck_derive = { version = "1.10.1" }
+num-derive = "0.4"
+num_enum = "0.7"
+num-traits = "0.2"
+serde = { version = "1.0.219", optional = true }
+solana-program-error = "3.0.0"
+solana-program-option = "3.0.0"
+solana-pubkey = "3.0.0"
+solana-zk-sdk = "4.0.0"
+thiserror = "2.0"
+
+[dev-dependencies]
+serde_json = "1.0.142"
+base64 = { version = "0.22.1" }
+
+[lib]
+crate-type = ["lib"]
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
