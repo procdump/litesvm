@@ -9,6 +9,7 @@ repository.workspace = true
 readme = "../../README.md"
 
 [features]
+default = ["register-tracing"]
 internal-test = []
 invocation-inspect-callback = []
 nodejs-internal = ["dep:qualifier_attr"]
@@ -87,6 +88,7 @@ solana-transaction-error.workspace = true
 thiserror.workspace = true
 sha2 = { workspace = true, optional = true }
 hex = { workspace = true, optional = true }
+gdbstub = { workspace = true, optional = true }
 
 [dev-dependencies]
 criterion.workspace = true

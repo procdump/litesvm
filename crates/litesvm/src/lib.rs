@@ -283,6 +283,8 @@ much easier.
 
 #[cfg(feature = "register-tracing")]
 use crate::register_tracing::DefaultRegisterTracingCallback;
+#[cfg(feature = "invocation-inspect-callback")]
+use crate::register_tracing::TraceEventCallback;
 #[cfg(feature = "precompiles")]
 use precompiles::load_precompiles;
 #[cfg(feature = "nodejs-internal")]
@@ -1081,12 +1083,20 @@ impl LiteSVM {
                 );
 
                 #[cfg(feature = "invocation-inspect-callback")]
-                self.invocation_inspect_callback.before_invocation(
-                    self,
-                    tx,
-                    &program_indices,
-                    &invoke_context,
-                );
+                {
+                    if let Some(callback) =
+                        self.invocation_inspect_callback.get_trace_event_callback()
+                    {
+                        invoke_context.trace_event_callback = Some(callback.as_ref());
+                    }
+
+                    self.invocation_inspect_callback.before_invocation(
+                        self,
+                        tx,
+                        &program_indices,
+                        &invoke_context,
+                    );
+                }
 
                 let mut tx_result = process_message(
                     message,
@@ -1670,6 +1680,10 @@ pub trait InvocationInspectCallback: Send + Sync {
         invoke_context: &InvokeContext,
         enable_register_tracing: bool,
     );
+
+    fn get_trace_event_callback(&self) -> Option<&Arc<TraceEventCallback>> {
+        None
+    }
 }
 
 #[cfg(feature = "invocation-inspect-callback")]

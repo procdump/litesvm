@@ -173,7 +173,10 @@ pub fn test_nonexistent_program() {
 fn test_register_tracing_handler() {
     use {
         litesvm::InvocationInspectCallback,
-        solana_program_runtime::invoke_context::{Executable, InvokeContext, RegisterTrace},
+        solana_program_runtime::{
+            invoke_context::{Executable, InvokeContext, RegisterTrace},
+            solana_sbpf::{static_analysis::RegisterTraceEntry, vm::TraceEvent},
+        },
         solana_transaction::{sanitized::SanitizedTransaction, Address},
         solana_transaction_context::{IndexOfAccount, InstructionContext},
         std::{
@@ -181,6 +184,9 @@ fn test_register_tracing_handler() {
             sync::{Arc, Mutex},
         },
     };
+
+    type TraceEventCallback = dyn Fn(InstructionContext, &Executable, TraceEvent) + Send + Sync;
+    type CollectedData = (Address, Vec<u8>, Vec<RegisterTraceEntry>);
 
     let enable_register_tracing = true;
 
@@ -190,22 +196,49 @@ fn test_register_tracing_handler() {
         program_id: Address,
         executed_jump_instructions_count: usize,
     }
-
     struct CustomRegisterTracingCallback {
         tracing_data: Arc<Mutex<HashMap<Address, TracingData>>>,
+        trace_event_callback: Option<Arc<TraceEventCallback>>,
+        register_traces: Arc<Mutex<Vec<CollectedData>>>,
+    }
+
+    impl CustomRegisterTracingCallback {
+        fn new(tracing_data: Arc<Mutex<HashMap<Address, TracingData>>>) -> Self {
+            let mut instance = Self {
+                trace_event_callback: None,
+                register_traces: Arc::new(Mutex::new(Vec::default())),
+                tracing_data,
+            };
+            instance.trace_event_callback = Some(Arc::new({
+                let register_traces = Arc::clone(&instance.register_traces);
+                move |instruction_context, executable, trace_event| match trace_event {
+                    TraceEvent::InvokingDebugger(_debug_port) => {}
+                    TraceEvent::RegisterTrace(register_trace) => {
+                        let program_id = instruction_context.get_program_key().unwrap();
+                        let text_bytes = executable.get_text_bytes().1.to_vec();
+                        register_traces.lock().unwrap().push((
+                            *program_id,
+                            text_bytes,
+                            register_trace.to_vec(),
+                        ));
+                    }
+                }
+            }));
+            instance
+        }
     }
 
     impl CustomRegisterTracingCallback {
         pub fn handler(
             &self,
-            instruction_context: InstructionContext,
-            executable: &Executable,
+            _: &LiteSVM,
+            program_id: &Address,
+            text_bytes: &[u8],
             register_trace: RegisterTrace,
         ) -> Result<(), Box<dyn std::error::Error>> {
             let mut tracing_data = self.tracing_data.lock().unwrap();
 
-            let program_id = instruction_context.get_program_key().unwrap();
-            let (_vm_addr, program) = executable.get_text_bytes();
+            let program = text_bytes;
             let executed_jump_instructions_count = register_trace
                 .iter()
                 .map(|registers| {
@@ -235,6 +268,10 @@ fn test_register_tracing_handler() {
     }
 
     impl InvocationInspectCallback for CustomRegisterTracingCallback {
+        fn get_trace_event_callback(&self) -> Option<&Arc<TraceEventCallback>> {
+            self.trace_event_callback.as_ref()
+        }
+
         fn before_invocation(
             &self,
             _: &LiteSVM,
@@ -246,23 +283,23 @@ fn test_register_tracing_handler() {
 
         fn after_invocation(
             &self,
-            _: &LiteSVM,
-            invoke_context: &InvokeContext,
+            svm: &LiteSVM,
+            _invoke_context: &InvokeContext,
             register_tracing_enabled: bool,
         ) {
             // Only process traces if register tracing was enabled.
             if register_tracing_enabled {
-                invoke_context.iterate_vm_traces(
-                    &|instruction_context: InstructionContext,
-                      executable: &Executable,
-                      register_trace: RegisterTrace| {
-                        if let Err(e) =
-                            self.handler(instruction_context, executable, register_trace)
-                        {
-                            eprintln!("Error collecting the register tracing: {}", e);
-                        }
-                    },
-                );
+                let register_traces = std::mem::take(&mut *self.register_traces.lock().unwrap());
+                for (program_id, text_bytes, register_trace) in register_traces {
+                    if let Err(e) = self.handler(
+                        svm,
+                        &program_id,
+                        text_bytes.as_slice(),
+                        register_trace.as_slice(),
+                    ) {
+                        eprintln!("Error collecting the register tracing: {}", e);
+                    }
+                }
             }
         }
     }
@@ -272,9 +309,9 @@ fn test_register_tracing_handler() {
     // Have a custom register tracing handler counting the total number of executed
     // jump instructions per program_id.
     let tracing_data = Arc::new(Mutex::new(HashMap::<Address, TracingData>::new()));
-    svm.set_invocation_inspect_callback(CustomRegisterTracingCallback {
-        tracing_data: Arc::clone(&tracing_data),
-    });
+    svm.set_invocation_inspect_callback(CustomRegisterTracingCallback::new(Arc::clone(
+        &tracing_data,
+    )));
 
     let payer_kp = Keypair::new();
     let payer_pk = payer_kp.pubkey();
@@ -337,9 +374,9 @@ fn test_register_tracing_handler() {
         // Create a new LiteSVM instance with register tracing disabled.
         let mut svm_no_tracing = LiteSVM::new_debuggable(/* enable_register_tracing */ false);
         let counter_address = init_svm(&mut svm_no_tracing);
-        svm_no_tracing.set_invocation_inspect_callback(CustomRegisterTracingCallback {
-            tracing_data: Arc::clone(&tracing_data),
-        });
+        svm_no_tracing.set_invocation_inspect_callback(CustomRegisterTracingCallback::new(
+            Arc::clone(&tracing_data),
+        ));
 
         // Execute the same transaction again.
         let blockhash = svm_no_tracing.latest_blockhash();
@@ -364,9 +401,9 @@ fn test_register_tracing_handler() {
         // Create a new LiteSVM instance with register tracing enabled.
         let mut svm_with_tracing = LiteSVM::new_debuggable(/* enable_register_tracing */ true);
         let counter_address = init_svm(&mut svm_with_tracing);
-        svm_with_tracing.set_invocation_inspect_callback(CustomRegisterTracingCallback {
-            tracing_data: Arc::clone(&tracing_data),
-        });
+        svm_with_tracing.set_invocation_inspect_callback(CustomRegisterTracingCallback::new(
+            Arc::clone(&tracing_data),
+        ));
 
         // Execute the same transaction again.
         let blockhash = svm_with_tracing.latest_blockhash();

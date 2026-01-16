@@ -21,6 +21,7 @@ use gdbstub::target::ext::base::singlethread::{SingleThreadBase, SingleThreadRes
 use gdbstub::target::ext::lldb_register_info_override::{Callback, CallbackToken};
 use gdbstub::target::ext::section_offsets::Offsets;
 
+use crate::vm::TraceEvent;
 use crate::{
     ebpf,
     error::{EbpfError, ProgramResult},
@@ -44,6 +45,11 @@ fn wait_for_tcp(port: u16) -> DynResult<TcpStream> {
 
 /// Connect to the debugger and hand over the control of the interpreter
 pub fn execute<C: ContextObject>(interpreter: &mut Interpreter<C>, port: u16) {
+    interpreter
+        .vm
+        .context_object_pointer
+        .trace_event(TraceEvent::InvokingDebugger(port));
+
     let connection: Box<dyn ConnectionExt<Error = std::io::Error>> =
         Box::new(wait_for_tcp(port).expect("Cannot connect to Debugger"));
     let mut dbg = GdbStub::new(connection)

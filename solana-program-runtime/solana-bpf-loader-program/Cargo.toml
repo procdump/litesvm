@@ -104,7 +104,7 @@ default-features = false
 [dependencies.solana-sbpf]
 version = "=0.13.1"
 features = ["jit"]
-default-features = false
+default-features = true
 
 [dependencies.solana-sdk-ids]
 version = "3.0.0"

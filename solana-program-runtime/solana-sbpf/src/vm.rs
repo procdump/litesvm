@@ -136,12 +136,22 @@ impl<C: ContextObject> Executable<C> {
     }
 }
 
+/// Trace Events this VM could emit.
+pub enum TraceEvent {
+    /// Collected a register trace
+    RegisterTrace(Vec<RegisterTraceEntry>),
+    /// VM is invoking the debugger
+    InvokingDebugger(u16),
+}
+
 /// Runtime context
 pub trait ContextObject {
     /// Consume instructions from meter
     fn consume(&mut self, amount: u64);
     /// Get the number of remaining instructions allowed
     fn get_remaining(&self) -> u64;
+    /// Emit a trace event
+    fn trace_event(&self, _: TraceEvent) {}
 }
 
 /// Statistic of taken branches (from a recorded trace)
@@ -397,6 +407,10 @@ impl<'a, C: ContextObject> EbpfVm<'a, C> {
         } else {
             0
         };
+        self.context_object_pointer
+            .trace_event(TraceEvent::RegisterTrace(std::mem::take(
+                &mut self.register_trace,
+            )));
         let mut result = ProgramResult::Ok(0);
         std::mem::swap(&mut result, &mut self.program_result);
         (instruction_count, result)

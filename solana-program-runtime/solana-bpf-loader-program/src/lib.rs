@@ -1527,7 +1527,6 @@ fn execute<'a, 'b: 'a>(
             vm.registers[2] = instruction_data_offset as u64;
         }
         let (compute_units_consumed, result) = vm.execute_program(executable, !use_jit);
-        let register_trace = std::mem::take(&mut vm.register_trace);
         MEMORY_POOL.with_borrow_mut(|memory_pool| {
             memory_pool.put_stack(stack);
             memory_pool.put_heap(heap);
@@ -1535,7 +1534,6 @@ fn execute<'a, 'b: 'a>(
             debug_assert!(memory_pool.heap_len() <= MAX_INSTRUCTION_STACK_DEPTH);
         });
         drop(vm);
-        invoke_context.insert_register_trace(register_trace);
         if let Some(execute_time) = invoke_context.execute_time.as_mut() {
             execute_time.stop();
             invoke_context.timings.execute_us += execute_time.as_us();

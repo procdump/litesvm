@@ -8,10 +8,10 @@ use {
         stable_log,
         sysvar_cache::SysvarCache,
     },
-    solana_account::{create_account_shared_data_for_test, AccountSharedData},
+    solana_account::{AccountSharedData, create_account_shared_data_for_test},
     solana_epoch_schedule::EpochSchedule,
     solana_hash::Hash,
-    solana_instruction::{error::InstructionError, AccountMeta, Instruction},
+    solana_instruction::{AccountMeta, Instruction, error::InstructionError},
     solana_pubkey::Pubkey,
     solana_sbpf::{
         ebpf::MM_HEAP_START,
@@ -43,6 +43,7 @@ use {
         rc::Rc,
     },
 };
+use solana_sbpf::vm::TraceEvent;
 
 pub type BuiltinFunctionWithContext = BuiltinFunction<InvokeContext<'static, 'static>>;
 pub type Executable = GenericExecutable<InvokeContext<'static, 'static>>;
@@ -96,6 +97,31 @@ impl ContextObject for InvokeContext<'_, '_> {
 
     fn get_remaining(&self) -> u64 {
         *self.compute_meter.borrow()
+    }
+
+    fn trace_event(&self, trace_event: TraceEvent) {
+        if let Some(callback) = self.trace_event_callback {
+            if let TraceEvent::RegisterTrace(register_trace) = &trace_event {
+                if register_trace.is_empty() {
+                    return;
+                }
+            }
+            let Ok(instruction_context) =
+                self.transaction_context.get_current_instruction_context()
+            else {
+                return;
+            };
+            let Ok(program_id) = instruction_context.get_program_key() else {
+                return;
+            };
+            let Some(entry) = self.program_cache_for_tx_batch.find(program_id) else {
+                return;
+            };
+            let ProgramCacheEntryType::Loaded(ref executable) = entry.program else {
+                return;
+            };
+            callback(instruction_context, executable, trace_event);
+        }
     }
 }
 
@@ -200,8 +226,7 @@ pub struct InvokeContext<'a, 'ix_data> {
     pub execute_time: Option<Measure>,
     pub timings: ExecuteDetailsTimings,
     pub syscall_context: Vec<Option<SyscallContext>>,
-    /// Pairs of index in TX instruction trace and VM register trace
-    register_traces: Vec<(usize, Vec<[u64; 12]>)>,
+    pub trace_event_callback: Option<&'a dyn Fn(InstructionContext, &Executable, TraceEvent)>,
 }
 
 impl<'a, 'ix_data> InvokeContext<'a, 'ix_data> {
@@ -225,7 +250,7 @@ impl<'a, 'ix_data> InvokeContext<'a, 'ix_data> {
             execute_time: None,
             timings: ExecuteDetailsTimings::default(),
             syscall_context: Vec::new(),
-            register_traces: Vec::new(),
+            trace_event_callback: None,
         }
     }
 
@@ -720,44 +745,6 @@ impl<'a, 'ix_data> InvokeContext<'a, 'ix_data> {
             .last_mut()
             .and_then(|syscall_context| syscall_context.as_mut())
             .ok_or(InstructionError::CallDepth)
-    }
-
-    /// Insert a VM register trace
-    pub fn insert_register_trace(&mut self, register_trace: Vec<[u64; 12]>) {
-        if register_trace.is_empty() {
-            return;
-        }
-        let Ok(instruction_context) = self.transaction_context.get_current_instruction_context()
-        else {
-            return;
-        };
-        self.register_traces
-            .push((instruction_context.get_index_in_trace(), register_trace));
-    }
-
-    /// Iterates over all VM register traces (including CPI)
-    pub fn iterate_vm_traces(
-        &self,
-        callback: &dyn Fn(InstructionContext, &Executable, RegisterTrace),
-    ) {
-        for (index_in_trace, register_trace) in &self.register_traces {
-            let Ok(instruction_context) = self
-                .transaction_context
-                .get_instruction_context_at_index_in_trace(*index_in_trace)
-            else {
-                continue;
-            };
-            let Ok(program_id) = instruction_context.get_program_key() else {
-                continue;
-            };
-            let Some(entry) = self.program_cache_for_tx_batch.find(program_id) else {
-                continue;
-            };
-            let ProgramCacheEntryType::Loaded(ref executable) = entry.program else {
-                continue;
-            };
-            callback(instruction_context, executable, register_trace.as_slice());
-        }
     }
 }
 

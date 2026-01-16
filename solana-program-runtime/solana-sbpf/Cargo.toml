@@ -43,7 +43,7 @@ repository = "https://github.com/anza-xyz/sbpf"
 
 [features]
 debugger = ["dep:gdbstub"]
-default = ["jit"]
+default = ["jit","debugger"]
 fuzzer-not-safe-for-production = ["arbitrary"]
 jit = [
     "dep:libc",
