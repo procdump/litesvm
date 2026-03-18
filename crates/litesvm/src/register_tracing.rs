@@ -1,8 +1,13 @@
 use {
     crate::{InvocationInspectCallback, LiteSVM},
+    agave_syscalls::SyscallInvokeSignedRust,
     sha2::{Digest, Sha256},
     solana_address::Address,
-    solana_program_runtime::invoke_context::{Executable, InvokeContext, RegisterTrace},
+    solana_program_runtime::{
+        invoke_context::{Executable, InvokeContext, RegisterTrace},
+        memory::translate_type,
+        solana_sbpf::{declare_builtin_function, memory_region::MemoryMapping},
+    },
     solana_transaction::sanitized::SanitizedTransaction,
     solana_transaction_context::{IndexOfAccount, InstructionContext},
     std::{fs::File, io::Write},
@@ -151,3 +156,25 @@ pub(crate) fn as_bytes<T>(slice: &[T]) -> &[u8] {
 fn compute_hash(slice: &[u8]) -> String {
     hex::encode(Sha256::digest(slice).as_slice())
 }
+
+declare_builtin_function!(
+    /// A custom syscall wrapping SyscallInvokeSignedRust
+    WrapperSyscallInvokeSignedRust,
+    fn rust(
+        invoke_context: &mut InvokeContext,
+        instruction_addr: u64,
+        account_infos_addr: u64,
+        account_infos_len: u64,
+        signers_seeds_addr: u64,
+        signers_seeds_len: u64,
+        memory_mapping: &mut MemoryMapping,
+    ) -> Result<u64, Box<dyn std::error::Error>> {
+        let check_aligned = invoke_context.get_check_aligned();
+        let ix = translate_type::<solana_stable_layout::stable_instruction::StableInstruction>(memory_mapping, instruction_addr, check_aligned)?;
+        let _program_id = ix.program_id;
+        // if (SBF_DEBUG_PORT is set && SBF_TRACE_FILTER matches the ix's program_id) {
+        //     invoke_context.debug_port = SBF_DEBUG_PORT
+        // }
+        SyscallInvokeSignedRust::rust(invoke_context, instruction_addr, account_infos_addr, account_infos_len, signers_seeds_addr, signers_seeds_len, memory_mapping)
+    }
+);

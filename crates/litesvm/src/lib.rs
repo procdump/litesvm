@@ -460,7 +460,15 @@ impl LiteSVM {
     fn into_basic(self) -> Self {
         let svm = self
             .with_feature_set(FeatureSet::all_enabled())
-            .with_builtins()
+            .with_builtins();
+        #[cfg(feature = "register-tracing")]
+        let svm = {
+            svm.with_custom_syscall(
+                "sol_invoke_signed_rust",
+                register_tracing::WrapperSyscallInvokeSignedRust::vm,
+            )
+        };
+        let svm = svm
             .with_lamports(1_000_000u64.wrapping_mul(LAMPORTS_PER_SOL))
             .with_sysvars()
             .with_default_programs()
