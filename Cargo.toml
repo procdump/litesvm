@@ -30,6 +30,7 @@ log = "0.4"
 napi = { version = "3.8.3", default-features = false }
 napi-build = "2.3.1"
 napi-derive = "3.5.2"
+nom = "8.0.0"
 qualifier_attr = "0.2.2"
 serde = "1.0.203"
 sha2 = "0.10.9"
@@ -93,9 +94,6 @@ spl-token-2022-interface = "2.0.0"
 spl-token-interface = "2.0.0"
 test-log = "0.2"
 thiserror = "2.0"
-nom = "8.0.0"
-solana-sbpf = { version = "0.13.1", features = ["debugger"] }
-gdbstub = "0.6.6"
 
 [profile.bench]
 debug = true
