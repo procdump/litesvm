@@ -1883,9 +1883,6 @@ pub trait InvocationInspectCallback: Send + Sync {
         invoke_context: &InvokeContext,
         enable_register_tracing: bool,
     );
-
-    fn as_any(&self) -> &dyn std::any::Any;
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any;
 }
 
 #[cfg(feature = "invocation-inspect-callback")]
@@ -1911,14 +1908,6 @@ impl InvocationInspectCallback for EmptyInvocationInspectCallback {
         _: &InvokeContext,
         _enable_register_tracing: bool,
     ) {
-    }
-
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
     }
 }
 
